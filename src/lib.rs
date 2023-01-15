@@ -15,12 +15,11 @@ mod tests {
 
     #[test]
     fn playground() {
-        let debug = |x: &usize| println!("{:?}", *x);
         (0..5)
             .windows(3)
             .filter(|x| x[0] % 2 == 0)
-            .map(second)
-            .for_each(debug);
+            .chain((0..6).windows(2))
+            .for_each(|x| println!("{:?}", x));
 
         println!();
 
