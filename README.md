@@ -15,8 +15,6 @@ Some `LendingIterator` methods *may* return something that can act as an `Iterat
 * chain
 * cmp
 * cmp_by
-* cloned
-* copied
 * count
 * cycle
 * enumerate
@@ -69,20 +67,23 @@ Some `LendingIterator` methods *may* return something that can act as an `Iterat
 * is_sorted_by
 * is_sorted_by_key
 * last
+* next_chunk
+* partition
+* partition_in_place
+* peekable
+* try_collect
+* unzip
+
+## methods that behave differently on `LendingIterator`s
+
 * max
 * max_by
 * max_by_key
 * min
 * min_by
 * min_by_key
-* next_chunk
-* partition
-* partition_in_place
-* peekable
 * reduce
-* try_collect
 * try_reduce
-* unzip
 
 ## methods that can sometimes be used to convert a `LendingIterator` into an `Iterator`
 
