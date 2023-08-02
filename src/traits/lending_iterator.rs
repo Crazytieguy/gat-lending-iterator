@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use crate::{Chain, Cloned, Filter, Map, SingleArgFnMut, StepBy};
+use crate::{Chain, Cloned, Filter, Map, SingleArgFnMut, StepBy, Zip};
 
 pub trait LendingIterator {
     type Item<'a>
@@ -41,6 +41,14 @@ pub trait LendingIterator {
         for<'a> I: LendingIterator<Item<'a> = Self::Item<'a>> + 'a,
     {
         Chain::new(self, other)
+    }
+
+    fn zip<I>(self, other: I) -> Zip<Self, I>
+    where
+        Self: Sized,
+        I: LendingIterator,
+    {
+        Zip::new(self, other)
     }
 
     fn map<F>(self, f: F) -> Map<Self, F>
