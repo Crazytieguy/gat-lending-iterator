@@ -1,4 +1,4 @@
-# Lending iterator
+# Gat Lending Iterator
 
 My concept for what a lending iterator crate should look like. **Work in progress**.
 
