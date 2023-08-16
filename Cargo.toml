@@ -1,4 +1,13 @@
 [package]
-name = "lending-iterator"
-version = "0.1.0"
+name = "gat-lending-iterator"
+version = "0.1.1"
 edition = "2021"
+license = "MIT"
+description = "A library for iterators who's items can [mutably] reference the iterator."
+homepage = "https://github.com/Crazytieguy/gat-lending-iterator"
+repository = "https://github.com/Crazytieguy/gat-lending-iterator/"
+documentation = "https://docs.rs/gat-lending-iterator"
+readme = "README.md"
+keywords = ["iterator", "lending", "gat"]
+categories = ["algorithms", "rust-patterns"]
+rust-version = "1.65"

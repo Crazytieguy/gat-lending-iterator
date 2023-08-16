@@ -1,5 +1,13 @@
 use crate::LendingIterator;
 
+/// A lending iterator that iterates over the elements of two iterators
+/// in sequence.
+///
+/// This `struct` is created by the [`chain`] method on [`LendingIterator`]. See
+/// its documentation for more.
+///
+/// [`LendingIterator`]: crate::LendingIterator
+/// [`chain`]: crate::LendingIterator::chain
 pub struct Chain<A, B> {
     a: A,
     b: B,

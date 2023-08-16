@@ -1,5 +1,12 @@
 use crate::LendingIterator;
 
+/// A lending iterator for stepping lending iterators by a custom amount.
+///
+/// This `struct` is created by the [`step_by`] method on [`LendingIterator`]. See
+/// its documentation for more.
+///
+/// [`LendingIterator`]: crate::LendingIterator
+/// [`step_by`]: crate::LendingIterator::step_by
 pub struct StepBy<I> {
     iter: I,
     step: usize,

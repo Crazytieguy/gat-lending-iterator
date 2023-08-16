@@ -1,5 +1,12 @@
 use crate::{LendingIterator, SingleArgFnMut, SingleArgFnOnce};
 
+/// A lending iterator that maps the elements of `iter` with `f`.
+///
+/// This `struct` is created by the [`map`] method on [`LendingIterator`]. See
+/// its documentation for more.
+///
+/// [`LendingIterator`]: crate::LendingIterator
+/// [`map`]: crate::LendingIterator::map
 pub struct Map<I, F> {
     iter: I,
     f: F,
@@ -21,16 +28,19 @@ where
             Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iter.next().map(|item| self.f.call_mut(item))
+        self.iter.next().map(&mut self.f)
     }
 }
 
-pub struct MapIntoIter<I, F> {
+/// An iterator that maps the elements of `iter` with `f`.
+///
+/// This `struct` is created when [`IntoIterator::into_iter`] is called on [`Map`].
+pub struct IntoIter<I, F> {
     iter: I,
     f: F,
 }
 
-impl<I, F, O> Iterator for MapIntoIter<I, F>
+impl<I, F, O> Iterator for IntoIter<I, F>
 where
     I: LendingIterator,
     F: FnMut(I::Item<'_>) -> O,
@@ -48,10 +58,10 @@ where
     F: FnMut(I::Item<'_>) -> O,
 {
     type Item = O;
-    type IntoIter = MapIntoIter<I, F>;
+    type IntoIter = IntoIter<I, F>;
 
     fn into_iter(self) -> Self::IntoIter {
-        MapIntoIter {
+        IntoIter {
             iter: self.iter,
             f: self.f,
         }
