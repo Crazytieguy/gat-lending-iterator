@@ -1,6 +1,12 @@
 use crate::LendingIterator;
 
-// Example for lending iterator: MapWindows (but without map)
+/// A lending iterator over mutable windows.
+///
+/// This `struct` is created by the [`windows_mut`] method on [`ToLendingIterator`]. See
+/// its documentation for more.
+///
+/// [`ToLendingIterator`]: crate::ToLendingIterator
+/// [`windows_mut`]: crate::ToLendingIterator::windows_mut
 pub struct WindowsMut<I: Iterator> {
     iter: I,
     size: usize,
@@ -8,7 +14,7 @@ pub struct WindowsMut<I: Iterator> {
 }
 
 impl<I: Iterator> WindowsMut<I> {
-    pub fn new(mut iter: I, size: usize) -> Self {
+    pub(crate) fn new(mut iter: I, size: usize) -> Self {
         let buf = iter.by_ref().take(size - 1).collect();
         Self { iter, size, buf }
     }

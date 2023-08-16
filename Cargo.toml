@@ -9,3 +9,4 @@ repository = "https://github.com/Crazytieguy/gat-lending-iterator/"
 readme = "README.md"
 keywords = ["iterator", "lending", "gat"]
 categories = ["algorithms", "rust-patterns"]
+rust-version = "1.65"

@@ -1,6 +1,8 @@
-//! Placeholders for the unstable fn_traits
+//! Placeholders for the unstable `fn_traits` feature.
 
+/// Placeholder for [`FnOnce`]
 pub trait SingleArgFnOnce<Arg>: FnOnce(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output {
+    /// The output type of the function.
     type Output;
 }
 
@@ -11,6 +13,7 @@ where
     type Output = O;
 }
 
+/// Placeholder for [`FnMut`]
 pub trait SingleArgFnMut<Arg>:
     SingleArgFnOnce<Arg> + FnMut(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output
 {
@@ -18,6 +21,7 @@ pub trait SingleArgFnMut<Arg>:
 
 impl<F, Arg, O> SingleArgFnMut<Arg> for F where F: FnMut(Arg) -> O {}
 
+/// Placeholder for [`Fn`]
 pub trait SingleArgFn<Arg>:
     SingleArgFnMut<Arg> + Fn(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output
 {

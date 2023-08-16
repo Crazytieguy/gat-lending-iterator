@@ -2,6 +2,13 @@ use std::ops::Deref;
 
 use crate::LendingIterator;
 
+/// A lending iterator that clones the elements of an underlying lending iterator.
+///
+/// This `struct` is created by the [`cloned`] method on [`LendingIterator`]. See
+/// its documentation for more.
+///
+/// [`LendingIterator`]: crate::LendingIterator
+/// [`cloned`]: crate::LendingIterator::cloned
 pub struct Cloned<I> {
     iter: I,
 }
@@ -27,11 +34,11 @@ where
     }
 }
 
-pub struct ClonedIntoIter<I> {
+pub struct IntoIter<I> {
     iter: I,
 }
 
-impl<I, T> Iterator for ClonedIntoIter<I>
+impl<I, T> Iterator for IntoIter<I>
 where
     I: LendingIterator,
     for<'a> I::Item<'a>: Deref<Target = T>,
@@ -51,9 +58,9 @@ where
     T: Clone,
 {
     type Item = T;
-    type IntoIter = ClonedIntoIter<I>;
+    type IntoIter = IntoIter<I>;
 
     fn into_iter(self) -> Self::IntoIter {
-        ClonedIntoIter { iter: self.iter }
+        IntoIter { iter: self.iter }
     }
 }

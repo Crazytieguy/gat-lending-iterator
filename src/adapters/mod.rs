@@ -6,5 +6,5 @@ mod step_by;
 pub use self::chain::Chain;
 pub use self::cloned::Cloned;
 pub use self::filter::Filter;
-pub use self::map::{Map, MapIntoIter};
+pub use self::map::{IntoIter, Map};
 pub use self::step_by::StepBy;
