@@ -3,6 +3,7 @@ use std::{num::NonZeroUsize, ops::Deref};
 use crate::{Chain, Cloned, Filter, Map, SingleArgFnMut, StepBy};
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
+///
 /// This means that the compiler will check that you finish using an item
 /// before requesting the next item, as it's not allowed for two `&mut self` to exist
 /// at the same time.
