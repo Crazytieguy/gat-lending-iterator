@@ -1,7 +1,7 @@
-pub trait SingleArgFnOnce<Arg> {
-    type Output;
+//! Placeholders for the unstable fn_traits
 
-    fn call_once(self, arg: Arg) -> Self::Output;
+pub trait SingleArgFnOnce<Arg>: FnOnce(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output {
+    type Output;
 }
 
 impl<F, Arg, O> SingleArgFnOnce<Arg> for F
@@ -9,34 +9,18 @@ where
     F: FnOnce(Arg) -> O,
 {
     type Output = O;
-
-    fn call_once(self, arg: Arg) -> O {
-        self(arg)
-    }
 }
 
-pub trait SingleArgFnMut<Arg>: SingleArgFnOnce<Arg> {
-    fn call_mut(&mut self, arg: Arg) -> Self::Output;
-}
-
-impl<F, Arg, O> SingleArgFnMut<Arg> for F
-where
-    F: FnMut(Arg) -> O,
+pub trait SingleArgFnMut<Arg>:
+    SingleArgFnOnce<Arg> + FnMut(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output
 {
-    fn call_mut(&mut self, arg: Arg) -> Self::Output {
-        self(arg)
-    }
 }
 
-pub trait SingleArgFn<Arg>: SingleArgFnMut<Arg> {
-    fn call(&self, args: Arg) -> Self::Output;
-}
+impl<F, Arg, O> SingleArgFnMut<Arg> for F where F: FnMut(Arg) -> O {}
 
-impl<F, Arg, O> SingleArgFn<Arg> for F
-where
-    F: Fn(Arg) -> O,
+pub trait SingleArgFn<Arg>:
+    SingleArgFnMut<Arg> + Fn(Arg) -> <Self as SingleArgFnOnce<Arg>>::Output
 {
-    fn call(&self, args: Arg) -> Self::Output {
-        self(args)
-    }
 }
+
+impl<F, Arg, O> SingleArgFn<Arg> for F where F: Fn(Arg) -> O {}

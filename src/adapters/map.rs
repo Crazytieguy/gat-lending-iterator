@@ -21,7 +21,7 @@ where
             Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iter.next().map(|item| self.f.call_mut(item))
+        self.iter.next().map(&mut self.f)
     }
 }
 
