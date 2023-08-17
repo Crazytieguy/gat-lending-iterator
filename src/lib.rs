@@ -28,7 +28,7 @@
 //! ```
 //!
 //! Prints:
-//! ```
+//! ```ignore
 //! [0, 1, 2]
 //! [2, 3, 4]
 //! [0, 1]
@@ -40,6 +40,8 @@
 //!
 //! Using [`windows_mut`](crate::ToLendingIterator::windows_mut) on a range, mutating it and mapping it:
 //! ```
+//! use gat_lending_iterator::{LendingIterator, ToLendingIterator};
+//! 
 //! for sum in (0..7).windows_mut(2).map(|slice: &mut [usize]| {
 //!     slice[1] += slice[0];
 //!     slice[1]
@@ -49,7 +51,7 @@
 //! ```
 //!
 //! Prints:
-//! ```
+//! ```ignore
 //! 1
 //! 3
 //! 6
@@ -60,6 +62,7 @@
 //!
 //! Using [`windows`](crate::ToLendingIterator::windows) on a range, and mapping it:
 //! ```
+//! use gat_lending_iterator::{LendingIterator, ToLendingIterator};
 //! fn second(slice: &[usize]) -> &usize {
 //!     &slice[1]
 //! }
@@ -70,7 +73,7 @@
 //! ```
 //!
 //! Prints:
-//! ```
+//! ```ignore
 //! 1
 //! 2
 //! 3
