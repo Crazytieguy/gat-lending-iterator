@@ -18,6 +18,13 @@ pub trait LendingIterator {
     /// See [`Iterator::next`].
     fn next(&mut self) -> Option<Self::Item<'_>>;
 
+    /// Returns the bounds on the remaining length of the iterator.
+    ///
+    /// See [`Iterator::size_hint`].
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
+
     /// Returns the number of items in the lending iterator.
     ///
     /// See [`Iterator::count`].
@@ -72,9 +79,11 @@ pub trait LendingIterator {
         Chain::new(self, other)
     }
 
+    /// 'Zips up' two lending iterators into a single lending iterator of pairs.
     fn zip<I>(self, other: I) -> Zip<Self, I>
     where
         Self: Sized,
+        // TODO: require IntoLendingIterator instead.
         I: LendingIterator,
     {
         Zip::new(self, other)

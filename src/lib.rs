@@ -116,5 +116,11 @@ mod tests {
         for n in (0..5).windows(3).map(second).cloned() {
             println!("{n}");
         }
+
+        println!();
+
+        (0..5).windows(4).zip(0..6).for_each(|(a, b)| {
+            println!("{a:?}, {b:?}");
+        });
     }
 }
