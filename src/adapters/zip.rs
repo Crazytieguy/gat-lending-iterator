@@ -33,20 +33,3 @@ where
         Some((a, b))
     }
 }
-
-impl<A, B> LendingIterator for Zip<A, B>
-where
-    A: LendingIterator,
-    B: Iterator,
-{
-    type Item<'a> = (A::Item<'a>, B::Item)
-        where
-            A: 'a, B: 'a
-    ;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        let a = self.a.next()?;
-        let b = self.b.next()?;
-        Some((a, b))
-    }
-}

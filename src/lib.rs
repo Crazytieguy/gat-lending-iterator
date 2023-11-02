@@ -119,8 +119,11 @@ mod tests {
 
         println!();
 
-        (0..5).windows(4).zip(0..6).for_each(|(a, b)| {
-            println!("{a:?}, {b:?}");
-        });
+        (0..5)
+            .windows(4)
+            .zip([0, 1].into_lending())
+            .for_each(|(a, b)| {
+                println!("{a:?}, {b:?}");
+            });
     }
 }
