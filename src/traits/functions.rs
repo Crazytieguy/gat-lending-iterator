@@ -28,3 +28,21 @@ pub trait SingleArgFn<Arg>:
 }
 
 impl<F, Arg, O> SingleArgFn<Arg> for F where F: Fn(Arg) -> O {}
+
+/// Used in cases that a function needs to return an [`Option`]
+/// who's lifetime is tied to the input.
+pub trait OptionTrait {
+    /// The type of the item in the option.
+    type Item;
+
+    /// Converts `self` into an `Option`.
+    fn into_option(self) -> Option<Self::Item>;
+}
+
+impl<T> OptionTrait for Option<T> {
+    type Item = T;
+
+    fn into_option(self) -> Option<Self::Item> {
+        self
+    }
+}

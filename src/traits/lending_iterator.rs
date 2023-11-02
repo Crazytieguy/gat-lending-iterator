@@ -1,6 +1,9 @@
 use std::{num::NonZeroUsize, ops::Deref};
 
-use crate::{Chain, Cloned, Filter, Map, SingleArgFnMut, StepBy, Zip};
+use crate::{
+    Chain, Cloned, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce, StepBy,
+    Zip,
+};
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
 ///
@@ -83,7 +86,6 @@ pub trait LendingIterator {
     fn zip<I>(self, other: I) -> Zip<Self, I>
     where
         Self: Sized,
-        // TODO: require IntoLendingIterator instead.
         I: LendingIterator,
     {
         Zip::new(self, other)
@@ -133,6 +135,18 @@ pub trait LendingIterator {
         P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         Filter::new(self, predicate)
+    }
+
+    /// Creates a lending iterator that both filters and maps.
+    ///
+    /// See [`Iterator::filter_map`].
+    fn filter_map<F>(self, f: F) -> FilterMap<Self, F>
+    where
+        Self: Sized,
+        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
+        for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
+    {
+        FilterMap::new(self, f)
     }
 
     /// Folds every element into an accumulator by applying an operation,
