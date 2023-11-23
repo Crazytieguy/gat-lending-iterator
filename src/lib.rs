@@ -41,7 +41,7 @@
 //! Using [`windows_mut`](crate::ToLendingIterator::windows_mut) on a range, mutating it and mapping it:
 //! ```
 //! use gat_lending_iterator::{LendingIterator, ToLendingIterator};
-//! 
+//!
 //! for sum in (0..7).windows_mut(2).map(|slice: &mut [usize]| {
 //!     slice[1] += slice[0];
 //!     slice[1]
@@ -83,9 +83,11 @@
 #![warn(clippy::pedantic)]
 
 mod adapters;
+mod sources;
 mod to_lending;
 mod traits;
 pub use self::adapters::*;
+pub use self::sources::*;
 pub use self::to_lending::*;
 pub use self::traits::*;
 
@@ -119,5 +121,12 @@ mod tests {
         for n in (0..5).windows(3).map(second).cloned() {
             println!("{n}");
         }
+    }
+
+    #[test]
+    fn test_once() {
+        let mut one = crate::once(1);
+        assert_eq!(Some(&1), one.next());
+        assert_eq!(None, one.next());
     }
 }
