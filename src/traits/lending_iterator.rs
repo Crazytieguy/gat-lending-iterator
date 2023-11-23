@@ -1,6 +1,9 @@
 use std::{num::NonZeroUsize, ops::Deref};
 
-use crate::{Chain, Cloned, Filter, Map, SingleArgFnMut, StepBy};
+use crate::{
+    Chain, Cloned, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce, StepBy,
+    Zip,
+};
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
 ///
@@ -17,6 +20,13 @@ pub trait LendingIterator {
     ///
     /// See [`Iterator::next`].
     fn next(&mut self) -> Option<Self::Item<'_>>;
+
+    /// Returns the bounds on the remaining length of the iterator.
+    ///
+    /// See [`Iterator::size_hint`].
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
 
     /// Returns the number of items in the lending iterator.
     ///
@@ -72,6 +82,15 @@ pub trait LendingIterator {
         Chain::new(self, other)
     }
 
+    /// 'Zips up' two lending iterators into a single lending iterator of pairs.
+    fn zip<I>(self, other: I) -> Zip<Self, I>
+    where
+        Self: Sized,
+        I: LendingIterator,
+    {
+        Zip::new(self, other)
+    }
+
     /// Takes a closure and creates a lending iterator which calls that closure on each
     /// element.
     ///
@@ -116,6 +135,18 @@ pub trait LendingIterator {
         P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         Filter::new(self, predicate)
+    }
+
+    /// Creates a lending iterator that both filters and maps.
+    ///
+    /// See [`Iterator::filter_map`].
+    fn filter_map<F>(self, f: F) -> FilterMap<Self, F>
+    where
+        Self: Sized,
+        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
+        for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
+    {
+        FilterMap::new(self, f)
     }
 
     /// Folds every element into an accumulator by applying an operation,

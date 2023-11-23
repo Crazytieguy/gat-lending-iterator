@@ -6,7 +6,7 @@ Most `Iterator` methods can work as is on `LendingIterator`s, but some wouldn't 
 
 Some `LendingIterator` methods _may_ return something that can act as an `Iterator`. For example `cloned`, or `map`, when the function passed to it returns a value that isn't tied to the lifetime of its input. In these cases, my design choice was to conditionally implement IntoIterator for the adapter.
 
-I've also included an extension trait `ToLendingIterator: Iterator` for iterators that allows turning them into lending iterators (over windows of elements). It's possible I will add more methods to this trait.
+I've also included an extension trait `ToLendingIterator: IntoIterator` for iterators that allows turning them into lending iterators in various ways, for example over windows of elements. It's possible I will add more methods to this trait.
 
 ## methods that behave the same on `LendingIterator`s as they do on `Iterator`s
 
