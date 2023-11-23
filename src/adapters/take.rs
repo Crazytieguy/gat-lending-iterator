@@ -21,6 +21,7 @@ where
 {
     type Item<'a> = I::Item<'a> where I: 'a;
 
+    #[allow(clippy::if_not_else)]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.n != 0 {
             self.n -= 1;

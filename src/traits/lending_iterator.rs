@@ -74,7 +74,7 @@ pub trait LendingIterator {
     /// Creates a lending iterator that lends the first `n` elements, or fewer
     /// if the underlying iterator ends sooner.
     ///
-    /// See ['Iterator::take`].
+    /// See [`Iterator::take`].
     fn take(self, n: usize) -> Take<Self>
     where
         Self: Sized,
