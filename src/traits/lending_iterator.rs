@@ -2,7 +2,7 @@ use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
     Chain, Cloned, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce, StepBy,
-    Zip,
+    Take, Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -69,6 +69,17 @@ pub trait LendingIterator {
         Self: Sized,
     {
         StepBy::new(self, step)
+    }
+
+    /// Creates a lending iterator that lends the first `n` elements, or fewer
+    /// if the underlying iterator ends sooner.
+    ///
+    /// See ['Iterator::take`].
+    fn take(self, n: usize) -> Take<Self>
+    where
+        Self: Sized,
+    {
+        Take::new(self, n)
     }
 
     /// Takes two lending iterators and creates a new lending iterator over both in sequence.
