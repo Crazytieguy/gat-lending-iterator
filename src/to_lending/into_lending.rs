@@ -17,4 +17,8 @@ impl<I: Iterator> LendingIterator for IntoLending<I> {
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
