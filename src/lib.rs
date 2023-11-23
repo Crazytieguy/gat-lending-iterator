@@ -41,7 +41,7 @@
 //! Using [`windows_mut`](crate::ToLendingIterator::windows_mut) on a range, mutating it and mapping it:
 //! ```
 //! use gat_lending_iterator::{LendingIterator, ToLendingIterator};
-//! 
+//!
 //! for sum in (0..7).windows_mut(2).map(|slice: &mut [usize]| {
 //!     slice[1] += slice[0];
 //!     slice[1]
