@@ -1,6 +1,10 @@
 mod into_lending;
+mod lend_refs;
+mod lend_refs_mut;
 mod windows;
 mod windows_mut;
 pub use self::into_lending::IntoLending;
+pub use self::lend_refs::LendRefs;
+pub use self::lend_refs_mut::LendRefsMut;
 pub use self::windows::Windows;
 pub use self::windows_mut::WindowsMut;
