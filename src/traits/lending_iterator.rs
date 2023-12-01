@@ -1,8 +1,8 @@
 use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
-    Chain, Cloned, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce, StepBy,
-    Take, Zip,
+    Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
+    StepBy, Take, Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -190,5 +190,13 @@ pub trait LendingIterator {
         T: Clone,
     {
         Cloned::new(self)
+    }
+
+    /// Creates a lending iterator which gives the current iteration count as well as the next value.
+    fn enumerate(self) -> Enumerate<Self>
+    where
+        Self: Sized,
+    {
+        Enumerate::new(self)
     }
 }
