@@ -2,7 +2,7 @@ use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
     Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    StepBy, Take, Zip,
+    StepBy, Take, Zip, TakeWhile,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -80,6 +80,20 @@ pub trait LendingIterator {
         Self: Sized,
     {
         Take::new(self, n)
+    }
+
+    /// Creates a lending iterator that lends items matching a predicate.
+    ///
+    /// The predicate is called once for every item.
+    /// Once it returns false once, `None` is returned for all subsequent calls to [`next`].
+    ///
+    /// [`next`]: Self::next
+    fn take_while<P>(self, predicate: P) -> TakeWhile<Self, P>
+    where
+        Self: Sized,
+        P: for <'a> FnMut(&Self::Item<'a>) -> bool
+    {
+        TakeWhile::new(self, predicate)
     }
 
     /// Takes two lending iterators and creates a new lending iterator over both in sequence.
