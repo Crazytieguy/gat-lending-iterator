@@ -1,4 +1,4 @@
-use crate::{IntoLending, Windows, WindowsMut};
+use crate::{IntoLending, LendRefs, LendRefsMut, Windows, WindowsMut};
 
 /// An extension trait for iterators that allows turning them into lending iterators (over windows of elements).
 pub trait ToLendingIterator: IntoIterator {
@@ -34,6 +34,24 @@ pub trait ToLendingIterator: IntoIterator {
         Self: Sized,
     {
         IntoLending::new(self.into_iter())
+    }
+
+    /// Turns this iterator into a lending iterator that lends references
+    /// to the iterator's items.
+    fn lend_refs(self) -> LendRefs<Self::IntoIter>
+    where
+        Self: Sized,
+    {
+        LendRefs::new(self.into_iter())
+    }
+
+    /// Turns this iterator into a lending iterator that lends mutable references
+    /// to the iterator's items.
+    fn lend_refs_mut(self) -> LendRefsMut<Self::IntoIter>
+    where
+        Self: Sized,
+    {
+        LendRefsMut::new(self.into_iter())
     }
 }
 
