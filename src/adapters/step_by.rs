@@ -7,6 +7,7 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`step_by`]: crate::LendingIterator::step_by
+#[derive(Clone)]
 pub struct StepBy<I> {
     iter: I,
     step: usize,

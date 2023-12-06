@@ -7,6 +7,7 @@ use crate::{LendingIterator, OptionTrait, SingleArgFnMut, SingleArgFnOnce};
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`filter_map`]: crate::LendingIterator::filter_map
+#[derive(Clone)]
 pub struct FilterMap<I, F> {
     iter: I,
     f: F,

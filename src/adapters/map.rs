@@ -7,6 +7,7 @@ use crate::{LendingIterator, SingleArgFnMut, SingleArgFnOnce};
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`map`]: crate::LendingIterator::map
+#[derive(Clone)]
 pub struct Map<I, F> {
     iter: I,
     f: F,
