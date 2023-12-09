@@ -2,7 +2,7 @@ use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
     Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    StepBy, Take, Zip, TakeWhile,
+    Skip, StepBy, Take, Zip, TakeWhile,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -212,5 +212,13 @@ pub trait LendingIterator {
         Self: Sized,
     {
         Enumerate::new(self)
+    }
+
+    /// Creates a lending iterator that skips over the first `n` elements of self.
+    fn skip(self, n: usize) -> Skip<Self>
+    where
+        Self: Sized,
+    {
+        Skip::new(self, n)
     }
 }
