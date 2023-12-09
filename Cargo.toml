@@ -1,6 +1,6 @@
 [package]
 name = "gat-lending-iterator"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 license = "MIT"
 description = "A library for iterators who's items can [mutably] reference the iterator."
