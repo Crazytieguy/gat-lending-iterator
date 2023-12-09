@@ -1,6 +1,7 @@
 use crate::LendingIterator;
 
 /// A Lending iterator that only lends the first `n` iterations of `iter`.
+#[derive(Clone)]
 pub struct Take<I> {
     iter: I,
     n: usize,

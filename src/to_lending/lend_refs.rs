@@ -2,6 +2,7 @@ use crate::LendingIterator;
 
 /// A lending iterator that given an iterator, lends
 /// references to the given iterator's items.
+#[derive(Clone)]
 pub struct LendRefs<I: Iterator> {
     item: Option<I::Item>,
     iter: I,

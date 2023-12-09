@@ -7,6 +7,7 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`zip`]: crate::LendingIterator::zip
+#[derive(Clone)]
 pub struct Zip<A, B> {
     a: A,
     b: B,

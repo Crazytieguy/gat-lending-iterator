@@ -1,6 +1,7 @@
 use crate::LendingIterator;
 
 /// A lending iterator that yields the current count and the element during iteration.
+#[derive(Clone)]
 pub struct Enumerate<I> {
     count: usize,
     iter: I,
