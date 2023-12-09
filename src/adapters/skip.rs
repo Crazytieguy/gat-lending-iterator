@@ -3,8 +3,8 @@ use crate::LendingIterator;
 /// A lending iterator that skips over the first `n` items of `iter`.
 #[derive(Clone)]
 pub struct Skip<I> {
-    n: usize,
     iter: I,
+    n: usize,
 }
 
 impl<I> Skip<I> {
@@ -42,6 +42,6 @@ mod test {
     use crate::ToLendingIterator;
     #[test]
     fn test() {
-        assert_eq!((0..5).into_lending().skip(1).nth(1), (0..5).skip(1).nth(1))
+        assert_eq!((0..5).into_lending().skip(1).nth(1), (0..5).skip(1).nth(1));
     }
 }
