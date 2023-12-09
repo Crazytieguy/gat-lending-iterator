@@ -1,6 +1,7 @@
 use crate::LendingIterator;
 
 /// A lending iterator that iterates over an iterator.
+#[derive(Clone)]
 pub struct IntoLending<I: Iterator> {
     iter: I,
 }

@@ -7,6 +7,7 @@ use crate::LendingIterator;
 ///
 /// [`ToLendingIterator`]: crate::ToLendingIterator
 /// [`windows`]: crate::ToLendingIterator::windows
+#[derive(Clone)]
 pub struct Windows<I: Iterator> {
     iter: I,
     size: usize,
