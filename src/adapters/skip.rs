@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A lending iterator that skips over the first `n` items of `iter`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Skip<I> {
     iter: I,
     n: usize,

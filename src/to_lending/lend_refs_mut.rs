@@ -2,7 +2,8 @@ use crate::LendingIterator;
 
 /// A lending iterator that given an iterator, lends
 /// mutable references to the given iterator's items.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct LendRefsMut<I: Iterator> {
     item: Option<I::Item>,
     iter: I,

@@ -7,7 +7,8 @@ use crate::LendingIterator;
 ///
 /// [`ToLendingIterator`]: crate::ToLendingIterator
 /// [`windows_mut`]: crate::ToLendingIterator::windows_mut
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct WindowsMut<I: Iterator> {
     iter: I,
     size: usize,

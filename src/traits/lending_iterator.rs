@@ -2,7 +2,7 @@ use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
     Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    Skip, StepBy, Take, Zip, TakeWhile,
+    Skip, StepBy, Take, TakeWhile, Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -10,6 +10,7 @@ use crate::{
 /// This means that the compiler will check that you finish using an item
 /// before requesting the next item, as it's not allowed for two `&mut self` to exist
 /// at the same time.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub trait LendingIterator {
     /// The type of the elements being iterated over.
     type Item<'a>
@@ -24,6 +25,7 @@ pub trait LendingIterator {
     /// Returns the bounds on the remaining length of the iterator.
     ///
     /// See [`Iterator::size_hint`].
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, None)
     }
@@ -31,6 +33,7 @@ pub trait LendingIterator {
     /// Returns the number of items in the lending iterator.
     ///
     /// See [`Iterator::count`].
+    #[inline]
     fn count(self) -> usize
     where
         Self: Sized,
@@ -41,6 +44,7 @@ pub trait LendingIterator {
     /// Advances the lending iterator by `n` elements.
     ///
     /// See [`Iterator::advance_by`].
+    #[inline]
     #[allow(clippy::missing_errors_doc)]
     fn advance_by(&mut self, n: usize) -> Result<(), NonZeroUsize> {
         for i in 0..n {
@@ -55,6 +59,7 @@ pub trait LendingIterator {
     /// Returns the `n`th element of the lending iterator.
     ///
     /// See [`Iterator::nth`].
+    #[inline]
     fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
         self.advance_by(n).ok()?;
         self.next()
@@ -64,6 +69,7 @@ pub trait LendingIterator {
     /// the given amount at each iteration.
     ///
     /// See [`Iterator::step_by`].
+    #[inline]
     fn step_by(self, step: usize) -> StepBy<Self>
     where
         Self: Sized,
@@ -75,6 +81,7 @@ pub trait LendingIterator {
     /// if the underlying iterator ends sooner.
     ///
     /// See [`Iterator::take`].
+    #[inline]
     fn take(self, n: usize) -> Take<Self>
     where
         Self: Sized,
@@ -88,10 +95,11 @@ pub trait LendingIterator {
     /// Once it returns false once, `None` is returned for all subsequent calls to [`next`].
     ///
     /// [`next`]: Self::next
+    #[inline]
     fn take_while<P>(self, predicate: P) -> TakeWhile<Self, P>
     where
         Self: Sized,
-        P: for <'a> FnMut(&Self::Item<'a>) -> bool
+        P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         TakeWhile::new(self, predicate)
     }
@@ -99,6 +107,7 @@ pub trait LendingIterator {
     /// Takes two lending iterators and creates a new lending iterator over both in sequence.
     ///
     /// See [`Iterator::chain`].
+    #[inline]
     fn chain<I>(self, other: I) -> Chain<Self, I>
     where
         Self: Sized,
@@ -108,6 +117,7 @@ pub trait LendingIterator {
     }
 
     /// 'Zips up' two lending iterators into a single lending iterator of pairs.
+    #[inline]
     fn zip<I>(self, other: I) -> Zip<Self, I>
     where
         Self: Sized,
@@ -129,6 +139,7 @@ pub trait LendingIterator {
     /// the resulting `LendingIterator` will implement [`IntoIterator`].
     ///
     /// See [`Iterator::map`].
+    #[inline]
     fn map<F>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -140,6 +151,7 @@ pub trait LendingIterator {
     /// Calls a closure on each element of the lending iterator.
     ///
     /// See [`Iterator::for_each`].
+    #[inline]
     fn for_each<F>(mut self, mut f: F)
     where
         Self: Sized,
@@ -154,6 +166,7 @@ pub trait LendingIterator {
     /// should be yielded.
     ///
     /// See [`Iterator::filter`].
+    #[inline]
     fn filter<P>(self, predicate: P) -> Filter<Self, P>
     where
         Self: Sized,
@@ -165,6 +178,7 @@ pub trait LendingIterator {
     /// Creates a lending iterator that both filters and maps.
     ///
     /// See [`Iterator::filter_map`].
+    #[inline]
     fn filter_map<F>(self, f: F) -> FilterMap<Self, F>
     where
         Self: Sized,
@@ -178,6 +192,7 @@ pub trait LendingIterator {
     /// returning the final result.
     ///
     /// See [`Iterator::fold`].
+    #[inline]
     fn fold<B, F>(mut self, init: B, mut f: F) -> B
     where
         Self: Sized,
@@ -197,6 +212,7 @@ pub trait LendingIterator {
     /// See [`Iterator::cloned`].
     ///
     /// [`clone`]: Clone::clone
+    #[inline]
     fn cloned<T>(self) -> Cloned<Self>
     where
         Self: Sized,
@@ -207,6 +223,7 @@ pub trait LendingIterator {
     }
 
     /// Creates a lending iterator which gives the current iteration count as well as the next value.
+    #[inline]
     fn enumerate(self) -> Enumerate<Self>
     where
         Self: Sized,
@@ -215,6 +232,7 @@ pub trait LendingIterator {
     }
 
     /// Creates a lending iterator that skips over the first `n` elements of self.
+    #[inline]
     fn skip(self, n: usize) -> Skip<Self>
     where
         Self: Sized,

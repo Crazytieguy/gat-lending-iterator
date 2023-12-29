@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A lending iterator that iterates over an iterator.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoLending<I: Iterator> {
     iter: I,
 }

@@ -8,6 +8,7 @@ use crate::{LendingIterator, SingleArgFnMut, SingleArgFnOnce};
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`map`]: crate::LendingIterator::map
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Map<I, F> {
     iter: I,
     f: F,
@@ -36,6 +37,8 @@ where
 /// An iterator that maps the elements of `iter` with `f`.
 ///
 /// This `struct` is created when [`IntoIterator::into_iter`] is called on [`Map`].
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoIter<I, F> {
     iter: I,
     f: F,

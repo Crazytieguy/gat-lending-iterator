@@ -8,6 +8,7 @@ use crate::LendingIterator;
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`filter`]: crate::LendingIterator::filter
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Filter<I, P> {
     iter: I,
     predicate: P,
