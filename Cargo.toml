@@ -11,3 +11,13 @@ readme = "README.md"
 keywords = ["iterator", "lending", "gat"]
 categories = ["algorithms", "rust-patterns"]
 rust-version = "1.65"
+
+[features]
+default = []
+alloc = []
+nightly = []
+# enable api's that are quivalents to std unstable api's
+unstable = []
+
+[dependencies]
+stable_try_trait_v2 = { version = "1.75" }

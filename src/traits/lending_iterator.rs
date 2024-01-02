@@ -1,9 +1,13 @@
-use std::{num::NonZeroUsize, ops::Deref};
+use ::core::{num::NonZeroUsize, ops::Deref};
+
+use stable_try_trait_v2::{internal::NeverShortCircuit, try_, FromResidual, Residual, Try};
 
 use crate::{
     Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    Skip, StepBy, Take, TakeWhile, Zip,
+    Skip, StepBy, Take, TakeWhile, TrustedLen, Zip,
 };
+
+// TODO: annotate all methods taking a `F: FnMut(..., Self::Item<'_>) -> ...` with the (already implicit) bound `Self: 'static` so that some "specialization" can be done on adapters that aren't always `'static` (i.e. `Adapter<'this>`).
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
 ///
@@ -39,6 +43,22 @@ pub trait LendingIterator {
         Self: Sized,
     {
         self.fold(0, |count, _| count + 1)
+    }
+
+    /// Consumes the lending iterator, returning the last element.
+    ///
+    /// See [`Iterator::last`].
+    #[inline]
+    fn last<'a>(&'a mut self) -> Option<Self::Item<'a>>
+    where
+        Self: TrustedLen,
+    {
+        // TrustedLen implementors MUST guarantee either exact size `(len, Some(len))` or `(usize::MAX, None)` from size_hint.
+        match self.size_hint() {
+            (i, Some(_)) if i > 0 => self.nth(i - 1),
+            // for all intents and purposes here, `(usize::MAX, None)` is infinite, therefore logically has no 'last' element
+            _ => None,
+        }
     }
 
     /// Advances the lending iterator by `n` elements.
@@ -108,10 +128,10 @@ pub trait LendingIterator {
     ///
     /// See [`Iterator::chain`].
     #[inline]
-    fn chain<I>(self, other: I) -> Chain<Self, I>
+    fn chain<'a, I>(self, other: I) -> Chain<Self, I>
     where
-        Self: Sized,
-        for<'a> I: LendingIterator<Item<'a> = Self::Item<'a>> + 'a,
+        Self: 'a + Sized,
+        I: 'a + LendingIterator<Item<'a> = Self::Item<'a>>,
     {
         Chain::new(self, other)
     }
@@ -146,6 +166,22 @@ pub trait LendingIterator {
         F: for<'a> SingleArgFnMut<Self::Item<'a>>,
     {
         Map::new(self, f)
+    }
+
+    /// A lending iterator method that applies a fallible function to each item in the iterator, stopping at the first error and returning that error.
+    ///
+    /// See [`Iterator::try_for_each`].
+    #[inline]
+    fn try_for_each<F, R>(&mut self, mut f: F) -> R
+    where
+        Self: Sized,
+        F: FnMut(Self::Item<'_>) -> R,
+        R: Try<Output = ()>,
+    {
+        while let Some(x) = self.next() {
+            try_!(f(x));
+        }
+        Try::from_output(())
     }
 
     /// Calls a closure on each element of the lending iterator.
@@ -186,6 +222,23 @@ pub trait LendingIterator {
         for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
     {
         FilterMap::new(self, f)
+    }
+
+    /// A lending iterator method that applies a function as long as it returns successfully, producing a single, final value.
+    ///
+    /// See [`Iterator::try_fold`].
+    #[inline]
+    fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item<'_>) -> R,
+        R: Try<Output = B>,
+    {
+        let mut acc = init;
+        while let Some(x) = self.next() {
+            acc = try_!(f(acc, x));
+        }
+        Try::from_output(acc)
     }
 
     /// Folds every element into an accumulator by applying an operation,
@@ -238,5 +291,25 @@ pub trait LendingIterator {
         Self: Sized,
     {
         Skip::new(self, n)
+    }
+}
+
+impl<I: LendingIterator + ?Sized> LendingIterator for &mut I {
+    type Item<'a> = I::Item<'a> where Self: 'a;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        (**self).next()
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (**self).size_hint()
+    }
+    #[inline]
+    fn advance_by(&mut self, n: usize) -> Result<(), NonZeroUsize> {
+        (**self).advance_by(n)
+    }
+    #[inline]
+    fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
+        (**self).nth(n)
     }
 }

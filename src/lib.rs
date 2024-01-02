@@ -78,9 +78,13 @@
 //! 2
 //! 3
 //! ```
-
 #![deny(missing_docs)]
 #![warn(clippy::pedantic)]
+#![no_std]
+#![cfg_attr(feature = "nightly", feature(trusted_len, closure_lifetime_binder))]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod adapters;
 mod to_lending;

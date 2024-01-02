@@ -1,4 +1,4 @@
-use crate::LendingIterator;
+use crate::{LendingIterator, TrustedLen, TrustedLenIterator};
 
 /// A lending iterator that given an iterator, lends
 /// mutable references to the given iterator's items.
@@ -24,6 +24,8 @@ impl<I: Iterator> LendingIterator for LendRefsMut<I> {
     }
 }
 
+unsafe impl<I: TrustedLenIterator> TrustedLen for LendRefsMut<I> {}
+
 #[cfg(test)]
 mod test {
     use crate::{LendingIterator, ToLendingIterator};
@@ -43,7 +45,7 @@ mod test {
 
     #[test]
     fn test() {
-        let mut xs = Vec::new();
+        let mut xs = ::alloc::vec::Vec::new();
         test_helper().take(3).for_each(|x: &mut Foo| {
             x.0 += 2;
             xs.push(x.clone());
@@ -53,6 +55,6 @@ mod test {
 
     fn test_helper() -> impl for<'a> LendingIterator<Item<'a> = &'a mut Foo> {
         let w = W { x: Foo(0) };
-        std::iter::once(Foo(0)).lend_refs_mut().chain(w)
+        core::iter::once(Foo(0)).lend_refs_mut().chain(w)
     }
 }

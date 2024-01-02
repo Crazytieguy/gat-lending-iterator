@@ -1,4 +1,4 @@
-use crate::LendingIterator;
+use crate::{LendingIterator, TrustedLen, TrustedLenIterator};
 
 /// A lending iterator that given an iterator, lends
 /// references to the given iterator's items.
@@ -26,6 +26,9 @@ where
         self.item.as_ref()
     }
 }
+
+unsafe impl<I: TrustedLenIterator> TrustedLen for LendRefs<I> {}
+
 #[cfg(test)]
 mod test {
     use crate::{LendingIterator, ToLendingIterator};

@@ -1,4 +1,4 @@
-use crate::LendingIterator;
+use crate::{LendingIterator, TrustedLen, TrustedLenIterator};
 
 /// A lending iterator that iterates over an iterator.
 #[derive(Clone, Debug)]
@@ -14,7 +14,7 @@ impl<I: Iterator> IntoLending<I> {
 }
 
 impl<I: Iterator> LendingIterator for IntoLending<I> {
-    type Item<'a> = I::Item where Self: 'a;
+    type Item<'a> = I::Item where I: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next()
@@ -24,3 +24,5 @@ impl<I: Iterator> LendingIterator for IntoLending<I> {
         self.iter.size_hint()
     }
 }
+
+unsafe impl<I: TrustedLenIterator> TrustedLen for IntoLending<I> {}
