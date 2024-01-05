@@ -41,7 +41,7 @@ mod test {
     #[test]
     fn test() {
         assert_eq!(
-            std::iter::repeat(())
+            core::iter::repeat(())
                 .into_lending()
                 .take(5)
                 .fold(0, |count, ()| { count + 1 }),

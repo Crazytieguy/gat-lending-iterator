@@ -15,9 +15,10 @@ rust-version = "1.65"
 [features]
 default = []
 alloc = []
-nightly = []
-# enable api's that are quivalents to std unstable api's
+std = ["alloc"]
+# enable api's that are similar to std unstable api's
 unstable = []
 
 [dependencies]
+# NOTE: could totally remove and include as a single file, just depended on to avoid hassle
 stable_try_trait_v2 = { version = "1.75" }

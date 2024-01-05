@@ -1,13 +1,11 @@
 use ::core::{num::NonZeroUsize, ops::Deref};
 
-use stable_try_trait_v2::{internal::NeverShortCircuit, try_, FromResidual, Residual, Try};
+use stable_try_trait_v2::{try_, Try};
 
 use crate::{
-    Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    Skip, StepBy, Take, TakeWhile, TrustedLen, Zip,
+    Chain, Cloned, Enumerate, ExactSizeLendingIterator, Filter, FilterMap, Map, OptionTrait,
+    Peekable, SingleArgFnMut, SingleArgFnOnce, Skip, StepBy, Take, TakeWhile, Zip,
 };
-
-// TODO: annotate all methods taking a `F: FnMut(..., Self::Item<'_>) -> ...` with the (already implicit) bound `Self: 'static` so that some "specialization" can be done on adapters that aren't always `'static` (i.e. `Adapter<'this>`).
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
 ///
@@ -49,16 +47,11 @@ pub trait LendingIterator {
     ///
     /// See [`Iterator::last`].
     #[inline]
-    fn last<'a>(&'a mut self) -> Option<Self::Item<'a>>
+    fn last(&mut self) -> Option<Self::Item<'_>>
     where
-        Self: TrustedLen,
+        Self: ExactSizeLendingIterator,
     {
-        // TrustedLen implementors MUST guarantee either exact size `(len, Some(len))` or `(usize::MAX, None)` from size_hint.
-        match self.size_hint() {
-            (i, Some(_)) if i > 0 => self.nth(i - 1),
-            // for all intents and purposes here, `(usize::MAX, None)` is infinite, therefore logically has no 'last' element
-            _ => None,
-        }
+        self.nth(self.len().saturating_sub(1))
     }
 
     /// Advances the lending iterator by `n` elements.
@@ -119,7 +112,7 @@ pub trait LendingIterator {
     fn take_while<P>(self, predicate: P) -> TakeWhile<Self, P>
     where
         Self: Sized,
-        P: for<'a> FnMut(&Self::Item<'a>) -> bool,
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
     {
         TakeWhile::new(self, predicate)
     }
@@ -163,7 +156,7 @@ pub trait LendingIterator {
     fn map<F>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
-        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
+        for<'all> F: SingleArgFnMut<Self::Item<'all>>,
     {
         Map::new(self, f)
     }
@@ -174,28 +167,31 @@ pub trait LendingIterator {
     #[inline]
     fn try_for_each<F, R>(&mut self, mut f: F) -> R
     where
-        Self: Sized,
-        F: FnMut(Self::Item<'_>) -> R,
+        Self: Sized + 'static,
+        for<'all> F: FnMut(Self::Item<'all>) -> R,
         R: Try<Output = ()>,
     {
-        while let Some(x) = self.next() {
-            try_!(f(x));
-        }
-        Try::from_output(())
+        self.try_fold(
+            (),
+            #[inline]
+            move |(), x| f(x),
+        )
     }
 
     /// Calls a closure on each element of the lending iterator.
     ///
     /// See [`Iterator::for_each`].
     #[inline]
-    fn for_each<F>(mut self, mut f: F)
+    fn for_each<F>(self, mut f: F)
     where
         Self: Sized,
-        F: FnMut(Self::Item<'_>),
+        for<'all> F: FnMut(Self::Item<'all>),
     {
-        while let Some(item) = self.next() {
-            f(item);
-        }
+        self.fold(
+            (),
+            #[inline]
+            move |(), item| f(item),
+        );
     }
 
     /// Creates a lending iterator which uses a closure to determine if an element
@@ -206,7 +202,7 @@ pub trait LendingIterator {
     fn filter<P>(self, predicate: P) -> Filter<Self, P>
     where
         Self: Sized,
-        P: for<'a> FnMut(&Self::Item<'a>) -> bool,
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
     {
         Filter::new(self, predicate)
     }
@@ -218,8 +214,8 @@ pub trait LendingIterator {
     fn filter_map<F>(self, f: F) -> FilterMap<Self, F>
     where
         Self: Sized,
-        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
-        for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
+        for<'all> F: SingleArgFnMut<Self::Item<'all>>,
+        for<'all> <F as SingleArgFnOnce<Self::Item<'all>>>::Output: OptionTrait,
     {
         FilterMap::new(self, f)
     }
@@ -230,8 +226,8 @@ pub trait LendingIterator {
     #[inline]
     fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
     where
-        Self: Sized,
-        F: FnMut(B, Self::Item<'_>) -> R,
+        Self: Sized + 'static,
+        for<'all> F: FnMut(B, Self::Item<'all>) -> R,
         R: Try<Output = B>,
     {
         let mut acc = init;
@@ -249,7 +245,7 @@ pub trait LendingIterator {
     fn fold<B, F>(mut self, init: B, mut f: F) -> B
     where
         Self: Sized,
-        F: FnMut(B, Self::Item<'_>) -> B,
+        for<'all> F: FnMut(B, Self::Item<'all>) -> B,
     {
         let mut accum = init;
         while let Some(x) = self.next() {
@@ -269,7 +265,7 @@ pub trait LendingIterator {
     fn cloned<T>(self) -> Cloned<Self>
     where
         Self: Sized,
-        for<'a> Self::Item<'a>: Deref<Target = T>,
+        for<'all> Self::Item<'all>: Deref<Target = T>,
         T: Clone,
     {
         Cloned::new(self)
@@ -282,6 +278,21 @@ pub trait LendingIterator {
         Self: Sized,
     {
         Enumerate::new(self)
+    }
+
+    /// Creates an iterator which can use the [`peek`] and [`peek_mut`] methods
+    /// to look at the next element of the iterator without consuming it.
+    ///
+    /// see [`Iterator::peekable`].
+    ///
+    /// [`peek`]: Peekable::peek
+    /// [`peek_mut`]: Peekable::peek_mut
+    #[inline]
+    fn peekable<'a>(self) -> Peekable<'a, Self>
+    where
+        Self: Sized + 'a,
+    {
+        Peekable::new(self)
     }
 
     /// Creates a lending iterator that skips over the first `n` elements of self.

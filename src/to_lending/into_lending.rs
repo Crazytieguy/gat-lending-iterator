@@ -1,4 +1,4 @@
-use crate::{LendingIterator, TrustedLen, TrustedLenIterator};
+use crate::LendingIterator;
 
 /// A lending iterator that iterates over an iterator.
 #[derive(Clone, Debug)]
@@ -24,5 +24,3 @@ impl<I: Iterator> LendingIterator for IntoLending<I> {
         self.iter.size_hint()
     }
 }
-
-unsafe impl<I: TrustedLenIterator> TrustedLen for IntoLending<I> {}

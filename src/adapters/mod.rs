@@ -16,7 +16,7 @@ pub use self::cloned::Cloned;
 pub use self::enumerate::Enumerate;
 pub use self::filter::Filter;
 pub use self::filter_map::FilterMap;
-pub use self::intersperse::Intersperse;
+pub use self::intersperse::IntersperseWith;
 pub use self::map::{IntoIter, Map};
 pub use self::peekable::Peekable;
 pub use self::skip::Skip;

@@ -1,5 +1,5 @@
 use crate::LendingIterator;
-use ::alloc::vec::Vec;
+use alloc::vec::Vec;
 
 /// A lending iterator over mutable windows.
 ///

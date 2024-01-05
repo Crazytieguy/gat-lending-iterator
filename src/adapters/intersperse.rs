@@ -1,53 +1,51 @@
-use core::fmt;
+use crate::{HasNextLendingIterator, LendingIterator};
 
-use crate::{LendingIterator, Peekable};
+// DISCUSS: I cannot think of a good use case for this.
 
-// WAITING ON: Peekable resolution, although we could always defer to `TrustedLen` to bind instead of `Peekable`
-
-/// see [`LendingIterator::intersperse`]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct Intersperse<'this, I: 'this>
-where
-    I::Item<'this>: Clone,
-    I: LendingIterator,
-{
-    iter: Peekable<'this, I>,
-    separator: I::Item<'this>,
+/// see [`Iterator::intersperse_with()`].
+#[must_use = "lenders are lazy and do nothing unless consumed"]
+pub struct IntersperseWith<I, G> {
+    separator: G,
+    iter: I,
     needs_sep: bool,
 }
-impl<'this, I> Intersperse<'this, I>
+impl<I, G> IntersperseWith<I, G>
 where
-    I::Item<'this>: Clone,
-    I: LendingIterator,
+    I: HasNextLendingIterator,
+    for<'all> G: FnMut(&'all ()) -> I::Item<'all>,
 {
-    pub(crate) fn new(iter: I, separator: I::Item<'this>) -> Self {
+    pub(crate) fn new(iter: I, separator: G) -> Self {
         Self {
-            iter: Peekable::new(iter),
+            iter,
             separator,
             needs_sep: false,
         }
     }
 }
+impl<I, G> LendingIterator for IntersperseWith<I, G>
+where
+    I: HasNextLendingIterator,
+    for<'all> G: FnMut(&'all ()) -> I::Item<'all>,
+{
+    type Item<'a> = I::Item<'a>
+        where
+            Self: 'a
+    ;
 
-#[must_use = "lenders are lazy and do nothing unless consumed"]
-pub struct IntersperseWith<'this, I, G>
-where
-    I: LendingIterator,
-{
-    separator: G,
-    iter: Peekable<'this, I>,
-    needs_sep: bool,
-}
-impl<'this, I, G> IntersperseWith<'this, I, G>
-where
-    I: LendingIterator,
-    G: FnMut() -> I::Item<'this>,
-{
-    pub(crate) fn new(iter: I, seperator: G) -> Self {
-        Self {
-            iter: Peekable::new(iter),
-            separator: seperator,
-            needs_sep: false,
+    fn next(&mut self) -> Option<I::Item<'_>> {
+        if self.iter.has_next() {
+            if self.needs_sep {
+                self.needs_sep = false;
+                Some((self.separator)(&()))
+            } else {
+                let needs_sep = &mut self.needs_sep;
+                self.iter.next().map(|item| {
+                    *needs_sep = true;
+                    item
+                })
+            }
+        } else {
+            None
         }
     }
 }
