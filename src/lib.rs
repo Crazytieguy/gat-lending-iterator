@@ -78,7 +78,7 @@
 //! 2
 //! 3
 //! ```
-#![deny(missing_docs)]
+#![deny(missing_docs, clippy::undocumented_unsafe_blocks)]
 #![warn(clippy::pedantic)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 

@@ -3,7 +3,7 @@ use crate::{HasNextLendingIterator, LendingIterator};
 // DISCUSS: I cannot think of a good use case for this.
 
 /// see [`Iterator::intersperse_with()`].
-#[must_use = "lenders are lazy and do nothing unless consumed"]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntersperseWith<I, G> {
     separator: G,
     iter: I,

@@ -6,6 +6,8 @@ use crate::LendingIterator;
 
 // REVIEW: I assumed the worst possible case is self-referencing, so I used Pin, but I'm unsure if that's really the case
 
+// REVIEW: What rules do we break by returning &'a mut Option<I::Item<'this>> instead of &'a mut Option<I::Item<'a>>? I don't think any drop implications are broken?
+
 /// A lending iterator with a `peek()` that returns an optional reference to the next
 /// element. requires pinning to peek.
 ///
@@ -36,45 +38,45 @@ where
         }
     }
     #[inline]
-    pub(crate) fn get_peeked<'a>(self: Pin<&'a mut Self>) -> &'a mut Option<I::Item<'a>> {
+    pub(crate) fn get_peeked(self: Pin<&mut Self>) -> &mut Option<I::Item<'this>> {
         // SAFETY: we can return a mutable reference to peeked because any self-referencing to self.iter is pinned
         unsafe {
             // SAFETY: mutable references to self or fields do not move self
             let this = self.get_unchecked_mut();
             let iter = &mut this.iter;
-            // SAFETY: 'this: 'a
-            core::mem::transmute::<&'a mut Option<I::Item<'this>>, &'a mut Option<I::Item<'a>>>(this.peeked
+            this.peeked
                 .get_or_insert_with(#[inline] ||
                     // SAFETY: We manually guarantee iter.next() is only called once per item, and we are pinning any possible self-referencing
                     core::mem::transmute::<Option<I::Item<'_>>, Option<I::Item<'this>>>(iter.next())
-                ))
+                )
         }
     }
     /// Returns a reference to the next() value without advancing the iterator.
     #[inline]
-    pub fn peek<'a>(self: Pin<&'a mut Self>) -> Option<&'a I::Item<'a>> {
+    pub fn peek(self: Pin<&mut Self>) -> Option<&I::Item<'this>> {
         self.get_peeked().as_ref()
     }
     /// Returns a mutable reference to the next() value without advancing the iterator.
     #[inline]
-    pub fn peek_mut<'a>(self: Pin<&'a mut Self>) -> Option<&'a mut I::Item<'a>> {
+    pub fn peek_mut(self: Pin<&mut Self>) -> Option<&mut I::Item<'this>> {
         self.get_peeked().as_mut()
     }
     /// Consume and return the next value of this iterator if a condition is true.
-    pub fn next_if<'a, F>(self: Pin<&'a mut Self>, f: F) -> Option<I::Item<'a>>
+    pub fn next_if<F>(self: Pin<&mut Self>, f: F) -> Option<I::Item<'_>>
     where
-        F: FnOnce(&I::Item<'a>) -> bool,
+        F: FnOnce(&I::Item<'this>) -> bool,
     {
+        // SAFETY: we use pin for self-referencing by peeked, so returning peeked is safe as long as we don't move self
         unsafe {
             let this = self.get_unchecked_mut();
             let iter = &mut this.iter;
             match &this.peeked {
-                Some(Some(v)) if f(core::mem::transmute::<&I::Item<'this>, &I::Item<'a>>(v)) => (),
+                Some(Some(v)) if f(v) => (),
                 None => return iter.next(),
                 _ => return None,
             }
             // SAFETY: 'this: 'a
-            core::mem::transmute::<Option<I::Item<'this>>, Option<I::Item<'a>>>(
+            core::mem::transmute::<Option<I::Item<'this>>, Option<I::Item<'_>>>(
                 this.peeked.take().unwrap_unchecked(),
             )
         }
@@ -82,7 +84,7 @@ where
     /// Consume and return the next item if it is equal to `expected`.
     pub fn next_if_eq<'a, T>(self: Pin<&'a mut Self>, t: &T) -> Option<I::Item<'a>>
     where
-        T: PartialEq<I::Item<'a>>,
+        T: PartialEq<I::Item<'this>>,
     {
         self.next_if(|v| t == v)
     }
@@ -105,7 +107,7 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Peekable")
-            .field("lender", &self.iter)
+            .field("iter", &self.iter)
             .field("peeked", &self.peeked)
             .finish()
     }
@@ -248,7 +250,7 @@ where
                 Some(Some(v)) => f(init, v),
                 None => init,
             };
-            // iter.fold would violate pin rules
+            // iter.fold moves iter so it violates &mut Self.
             while let Some(x) = iter.next() {
                 acc = f(acc, x);
             }
