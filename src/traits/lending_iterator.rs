@@ -1,6 +1,7 @@
 use ::core::{num::NonZeroUsize, ops::Deref};
+use core::{mem::transmute, ops::ControlFlow};
 
-use stable_try_trait_v2::{try_, Try};
+use stable_try_trait_v2::{try_, ChangeOutputType, FromResidual, Residual, Try};
 
 use crate::{
     Chain, Cloned, Enumerate, ExactSizeLendingIterator, Filter, FilterMap, Map, OptionTrait,
@@ -43,15 +44,17 @@ pub trait LendingIterator {
         self.fold(0, |count, _| count + 1)
     }
 
-    /// Consumes the lending iterator, returning the last element.
+    /// Consumes the lending iterator, returning the last element that can be predicted.
+    ///
+    /// Relies on [`size_hint`](LendingIterator::size_hint) to determine the number of elements to skip.
     ///
     /// See [`Iterator::last`].
     #[inline]
-    fn last(&mut self) -> Option<Self::Item<'_>>
-    where
-        Self: ExactSizeLendingIterator,
-    {
-        self.nth(self.len().saturating_sub(1))
+    fn last(&mut self) -> Option<Self::Item<'_>> {
+        match self.size_hint().1 {
+            Some(n) => self.nth(n.saturating_sub(1)),
+            None => None,
+        }
     }
 
     /// Advances the lending iterator by `n` elements.
@@ -161,13 +164,23 @@ pub trait LendingIterator {
         Map::new(self, f)
     }
 
+    /// Borrows an iterator, rather than consuming it.
+    ///
+    /// See [`Iterator::by_ref`].
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
     /// A lending iterator method that applies a fallible function to each item in the iterator, stopping at the first error and returning that error.
     ///
     /// See [`Iterator::try_for_each`].
     #[inline]
     fn try_for_each<F, R>(&mut self, mut f: F) -> R
     where
-        Self: Sized + 'static,
+        Self: Sized,
         for<'all> F: FnMut(Self::Item<'all>) -> R,
         R: Try<Output = ()>,
     {
@@ -226,7 +239,7 @@ pub trait LendingIterator {
     #[inline]
     fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
     where
-        Self: Sized + 'static,
+        Self: Sized,
         for<'all> F: FnMut(B, Self::Item<'all>) -> R,
         R: Try<Output = B>,
     {
@@ -247,11 +260,11 @@ pub trait LendingIterator {
         Self: Sized,
         for<'all> F: FnMut(B, Self::Item<'all>) -> B,
     {
-        let mut accum = init;
+        let mut acc = init;
         while let Some(x) = self.next() {
-            accum = f(accum, x);
+            acc = f(acc, x);
         }
-        accum
+        acc
     }
 
     /// Creates a lending iterator which [`clone`]s all of its elements.
@@ -262,10 +275,10 @@ pub trait LendingIterator {
     ///
     /// [`clone`]: Clone::clone
     #[inline]
-    fn cloned<T>(self) -> Cloned<Self>
+    fn cloned<'a, T>(self) -> Cloned<Self>
     where
-        Self: Sized,
-        for<'all> Self::Item<'all>: Deref<Target = T>,
+        Self: Sized + 'a,
+        Self::Item<'a>: Deref<Target = T>,
         T: Clone,
     {
         Cloned::new(self)
@@ -290,7 +303,7 @@ pub trait LendingIterator {
     #[inline]
     fn peekable<'a>(self) -> Peekable<'a, Self>
     where
-        Self: Sized + 'a,
+        Self: Sized,
     {
         Peekable::new(self)
     }
@@ -302,6 +315,80 @@ pub trait LendingIterator {
         Self: Sized,
     {
         Skip::new(self, n)
+    }
+
+    /// Creates an iterator that [`skip`]s elements based on a predicate.
+    ///
+    /// see [`Iterator::skip_while`].
+    ///
+    /// [`skip`]: Iterator::skip
+    // #[inline]
+    // #[doc(alias = "drop_while")]
+    // fn skip_while<P>(self, predicate: P) -> SkipWhile<Self, P>
+    // where
+    //     Self: Sized,
+    //     for<'all> P: FnMut(&Self::Item<'all>) -> bool,
+    // {
+    //     SkipWhile::new(self, predicate)
+    // }
+
+    /// Searches for an element of an iterator that satisfies a predicate.
+    ///
+    /// see [`Iterator::find`]
+    #[inline]
+    fn find<'a, P>(&'a mut self, mut predicate: P) -> Option<Self::Item<'a>>
+    where
+        Self: Sized,
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
+    {
+        while let Some(x) = self.next() {
+            if predicate(&x) {
+                // SAFETY: `x` is the last value yielded by `self`. polonious return
+                return Some(unsafe { transmute::<Self::Item<'_>, Self::Item<'a>>(x) });
+            }
+        }
+        None
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first non-none result.
+    ///
+    /// see [`Iterator::find_map`]
+    #[inline]
+    fn find_map<B, F>(&mut self, mut f: F) -> Option<B>
+    where
+        Self: Sized,
+        for<'all> F: FnMut(Self::Item<'all>) -> Option<B>,
+    {
+        while let Some(x) = self.next() {
+            if let Some(x) = f(x) {
+                return Some(x);
+            }
+        }
+        None
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first true result or the first error.
+    ///
+    /// see [`Iterator::try_find`]
+    #[inline]
+    fn try_find<F, R>(&mut self, mut f: F) -> ChangeOutputType<R, Option<Self::Item<'_>>>
+    where
+        Self: Sized,
+        F: for<'all> FnMut(&Self::Item<'all>) -> R,
+        R: Try<Output = bool>,
+        for<'all> R::Residual: Residual<Option<Self::Item<'all>>>,
+    {
+        // SAFETY: `self` is not used after early return. polonious return
+        while let Some(x) = unsafe { &mut *(self as *mut Self) }.next() {
+            match f(&x).branch() {
+                ControlFlow::Continue(false) => (),
+                ControlFlow::Continue(true) => return Try::from_output(Some(x)),
+                ControlFlow::Break(r) => return FromResidual::from_residual(r),
+            }
+        }
+        Try::from_output(None)
     }
 }
 

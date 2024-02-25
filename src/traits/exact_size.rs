@@ -43,11 +43,11 @@ impl<I: ExactSizeLendingIterator + ?Sized> ExactSizeLendingIterator for &mut I {
 /// Much more useful for lending iterators than regular iterators.
 pub trait HasNextLendingIterator: LendingIterator {
     /// Returns `true` if the iterator has more items or `false` if it is empty.
-    fn has_next(&self) -> bool;
+    fn has_next(&mut self) -> bool;
 }
 
 impl<I: HasNextLendingIterator + ?Sized> HasNextLendingIterator for &mut I {
-    fn has_next(&self) -> bool {
+    fn has_next(&mut self) -> bool {
         (**self).has_next()
     }
 }

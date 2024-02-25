@@ -16,8 +16,6 @@ rust-version = "1.65"
 default = []
 alloc = []
 std = ["alloc"]
-# enable api's that are similar to std unstable api's
-unstable = []
 
 [dependencies]
 # NOTE: could totally remove and include as a single file, just depended on to avoid hassle

@@ -1,12 +1,8 @@
 use core::{fmt, marker::PhantomPinned, pin::Pin};
 
-use stable_try_trait_v2::{try_, Try};
-
 use crate::LendingIterator;
 
 // REVIEW: I assumed the worst possible case is self-referencing, so I used Pin, but I'm unsure if that's really the case
-
-// REVIEW: What rules do we break by returning &'a mut Option<I::Item<'this>> instead of &'a mut Option<I::Item<'a>>? I don't think any drop implications are broken?
 
 /// A lending iterator with a `peek()` that returns an optional reference to the next
 /// element. requires pinning to peek.
@@ -113,48 +109,47 @@ where
     }
 }
 
-impl<'this, I> LendingIterator for Peekable<'this, I>
+// using deref instead of implementing LendingIterator directly
+// allows us to propogate the specialized implementations of the underlying iterator
+// (self.peeked is always None when self is not Pinned)
+impl<'this, I> ::core::ops::Deref for Peekable<'this, I>
 where
     I: LendingIterator,
 {
-    type Item<'a> = I::Item<'a>
-    where
-        Self: 'a;
-    // we only hold a peeked item if we are pinned
+    type Target = I;
     #[inline]
-    fn next(&mut self) -> Option<I::Item<'_>> {
-        self.iter.next()
-    }
-    #[inline]
-    fn count(self) -> usize {
-        self.iter.count()
-    }
-    #[inline]
-    fn nth(&mut self, n: usize) -> Option<I::Item<'_>> {
-        self.iter.nth(n)
-    }
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
-    }
-    #[inline]
-    fn try_fold<B, F, R>(&mut self, init: B, f: F) -> R
-    where
-        Self: Sized + 'static,
-        for<'all> F: FnMut(B, Self::Item<'all>) -> R,
-        R: Try<Output = B>,
-    {
-        self.iter.try_fold(init, f)
-    }
-    #[inline]
-    fn fold<B, F>(self, init: B, f: F) -> B
-    where
-        Self: Sized,
-        for<'all> F: FnMut(B, I::Item<'all>) -> B,
-    {
-        self.iter.fold(init, f)
+    fn deref(&self) -> &Self::Target {
+        &self.iter
     }
 }
+impl<'this, I> ::core::ops::DerefMut for Peekable<'this, I>
+where
+    I: LendingIterator,
+{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.iter
+    }
+}
+impl<'this, I> ::core::convert::AsRef<I> for Peekable<'this, I>
+where
+    I: LendingIterator,
+{
+    #[inline]
+    fn as_ref(&self) -> &I {
+        &self.iter
+    }
+}
+impl<'this, I> ::core::convert::AsMut<I> for Peekable<'this, I>
+where
+    I: LendingIterator,
+{
+    #[inline]
+    fn as_mut(&mut self) -> &mut I {
+        &mut self.iter
+    }
+}
+
 impl<'this, I> LendingIterator for Pin<&mut Peekable<'this, I>>
 where
     I: LendingIterator,
@@ -177,10 +172,13 @@ where
         }
     }
     #[inline]
-    fn count(mut self) -> usize {
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
         // SAFETY: ...
         unsafe {
-            let this = self.as_mut().get_unchecked_mut();
+            let this = self.get_unchecked_mut();
             let iter = &mut this.iter;
             match this.peeked.take() {
                 Some(None) => 0,
@@ -216,25 +214,7 @@ where
             None => iter.size_hint(),
         }
     }
-    #[inline]
-    fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
-    where
-        Self: Sized + 'static,
-        for<'all> F: FnMut(B, Self::Item<'all>) -> R,
-        R: Try<Output = B>,
-    {
-        // SAFETY: ...
-        unsafe {
-            let this = self.as_mut().get_unchecked_mut();
-            let iter = &mut this.iter;
-            let acc = match this.peeked.take() {
-                Some(None) => return Try::from_output(init),
-                Some(Some(v)) => try_!(f(init, v)),
-                None => init,
-            };
-            iter.try_fold(acc, f)
-        }
-    }
+    // fn try_fold cannot be specialized as of 1.75.0
     #[inline]
     fn fold<B, F>(self, init: B, mut f: F) -> B
     where
@@ -268,7 +248,7 @@ mod test {
     #[test]
     fn test() {
         assert_eq!(
-            Peekable::new((0..5).into_lending()).skip(1).nth(1),
+            Peekable::new((0..5).into_lending()).as_mut().skip(1).nth(1),
             (0..5).skip(1).nth(1)
         );
         assert_eq!(
