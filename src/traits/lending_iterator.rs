@@ -1,8 +1,8 @@
-use std::{num::NonZeroUsize, ops::Deref};
+use core::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
     Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    Skip, StepBy, Take, Zip, TakeWhile,
+    Skip, StepBy, Take, TakeWhile, Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -91,7 +91,7 @@ pub trait LendingIterator {
     fn take_while<P>(self, predicate: P) -> TakeWhile<Self, P>
     where
         Self: Sized,
-        P: for <'a> FnMut(&Self::Item<'a>) -> bool
+        P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         TakeWhile::new(self, predicate)
     }

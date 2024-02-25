@@ -41,6 +41,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test() {
         let mut xs = Vec::new();
         test_helper().take(3).for_each(|x: &mut Foo| {
@@ -52,6 +53,6 @@ mod test {
 
     fn test_helper() -> impl for<'a> LendingIterator<Item<'a> = &'a mut Foo> {
         let w = W { x: Foo(0) };
-        std::iter::once(Foo(0)).lend_refs_mut().chain(w)
+        core::iter::once(Foo(0)).lend_refs_mut().chain(w)
     }
 }
