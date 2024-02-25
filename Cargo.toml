@@ -13,6 +13,6 @@ categories = ["algorithms", "rust-patterns"]
 rust-version = "1.65"
 
 [features]
-default = []
+default = ["alloc"]
 alloc = []
 std = ["alloc"]
