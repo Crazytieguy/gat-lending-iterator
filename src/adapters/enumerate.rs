@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A lending iterator that yields the current count and the element during iteration.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Enumerate<I> {
     count: usize,
     iter: I,
@@ -15,6 +16,8 @@ impl<I> Enumerate<I> {
 
 impl<I: LendingIterator> LendingIterator for Enumerate<I> {
     type Item<'a> = (usize, I::Item<'a>) where Self: 'a;
+
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let item = self.iter.next()?;
         let count = self.count;

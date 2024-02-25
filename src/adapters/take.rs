@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A Lending iterator that only lends the first `n` iterations of `iter`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Take<I> {
     iter: I,
     n: usize,
@@ -22,6 +23,7 @@ where
 {
     type Item<'a> = I::Item<'a> where I: 'a;
 
+    #[inline]
     #[allow(clippy::if_not_else)]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.n != 0 {

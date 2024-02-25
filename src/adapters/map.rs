@@ -1,4 +1,5 @@
 use crate::{LendingIterator, SingleArgFnMut, SingleArgFnOnce};
+use core::fmt;
 
 /// A lending iterator that maps the elements of `iter` with `f`.
 ///
@@ -8,6 +9,7 @@ use crate::{LendingIterator, SingleArgFnMut, SingleArgFnOnce};
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`map`]: crate::LendingIterator::map
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Map<I, F> {
     iter: I,
     f: F,
@@ -16,6 +18,12 @@ pub struct Map<I, F> {
 impl<I, F> Map<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self { iter, f }
+    }
+}
+
+impl<I: fmt::Debug, F> fmt::Debug for Map<I, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Map").field("iter", &self.iter).finish()
     }
 }
 
@@ -28,6 +36,7 @@ where
         where
             Self: 'a;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next().map(&mut self.f)
     }

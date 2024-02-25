@@ -7,7 +7,8 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`zip`]: crate::LendingIterator::zip
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Zip<A, B> {
     a: A,
     b: B,
@@ -28,6 +29,7 @@ where
             A: 'a, B: 'a
     ;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let a = self.a.next()?;
         let b = self.b.next()?;
