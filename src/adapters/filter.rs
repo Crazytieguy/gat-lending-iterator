@@ -1,4 +1,5 @@
 use crate::LendingIterator;
+use core::fmt;
 
 /// A lending iterator that filters the elements of `iter` with `predicate`.
 ///
@@ -8,6 +9,7 @@ use crate::LendingIterator;
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`filter`]: crate::LendingIterator::filter
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Filter<I, P> {
     iter: I,
     predicate: P,
@@ -16,6 +18,12 @@ pub struct Filter<I, P> {
 impl<I, P> Filter<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self { iter, predicate }
+    }
+}
+
+impl<I: fmt::Debug, P> fmt::Debug for Filter<I, P> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Filter").field("iter", &self.iter).finish()
     }
 }
 
@@ -28,6 +36,7 @@ where
     where
         Self: 'a;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
             // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic

@@ -1,4 +1,5 @@
 use crate::{LendingIterator, OptionTrait, SingleArgFnMut, SingleArgFnOnce};
+use core::fmt;
 
 /// A lending iterator that uses `f` to both filter and map elements from `iter`.
 ///
@@ -8,6 +9,7 @@ use crate::{LendingIterator, OptionTrait, SingleArgFnMut, SingleArgFnOnce};
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`filter_map`]: crate::LendingIterator::filter_map
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct FilterMap<I, F> {
     iter: I,
     f: F,
@@ -16,6 +18,14 @@ pub struct FilterMap<I, F> {
 impl<I, F> FilterMap<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self { iter, f }
+    }
+}
+
+impl<I: fmt::Debug, F> fmt::Debug for FilterMap<I, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FilterMap")
+            .field("iter", &self.iter)
+            .finish()
     }
 }
 
@@ -29,6 +39,7 @@ where
     where
         Self: 'a;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
             // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic

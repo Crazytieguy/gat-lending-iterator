@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A lending iterator that skips over the first `n` items of `iter`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Skip<I> {
     iter: I,
     n: usize,
@@ -19,6 +20,7 @@ where
 {
     type Item<'a> = I::Item<'a> where I: 'a;
 
+    #[inline]
     fn next(&mut self) -> Option<I::Item<'_>> {
         if self.n > 0 {
             self.iter.nth(core::mem::take(&mut self.n))
@@ -27,6 +29,7 @@ where
         }
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
 
