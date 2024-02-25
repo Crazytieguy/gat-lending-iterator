@@ -79,8 +79,12 @@
 //! 3
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(missing_docs)]
 #![warn(clippy::pedantic)]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod adapters;
 mod to_lending;
@@ -93,11 +97,18 @@ pub use self::traits::*;
 mod tests {
     use super::*;
 
+    #[cfg(not(feature = "std"))]
+    #[test]
+    fn std_feature_is_enabled() -> Result<(), &'static str> {
+        Err("The `std` feature is required to run all tests, try `cargo test --features std`")
+    }
+
     fn second(slice: &[usize]) -> &usize {
         &slice[1]
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn playground() {
         (0..5)
             .windows(3)

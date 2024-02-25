@@ -11,3 +11,8 @@ readme = "README.md"
 keywords = ["iterator", "lending", "gat"]
 categories = ["algorithms", "rust-patterns"]
 rust-version = "1.65"
+
+[features]
+default = []
+alloc = []
+std = ["alloc"]

@@ -1,4 +1,6 @@
-use crate::{IntoLending, LendRefs, LendRefsMut, Windows, WindowsMut};
+use crate::{IntoLending, LendRefs, LendRefsMut};
+#[cfg(feature = "alloc")]
+use crate::{Windows, WindowsMut};
 
 /// An extension trait for iterators that allows turning them into lending iterators (over windows of elements).
 pub trait ToLendingIterator: IntoIterator {
@@ -8,6 +10,7 @@ pub trait ToLendingIterator: IntoIterator {
     /// This was chosen as a compromise between memory usage and time complexity:
     /// if the buffer was limited to size `size`, we would need to shift all the elements
     /// on every iteration.
+    #[cfg(feature = "alloc")]
     fn windows(self, size: usize) -> Windows<Self::IntoIter>
     where
         Self: Sized,
@@ -21,6 +24,7 @@ pub trait ToLendingIterator: IntoIterator {
     /// This was chosen as a compromise between memory usage and time complexity:
     /// if the buffer was limited to size `size`, we would need to shift all the elements
     /// on every iteration.
+    #[cfg(feature = "alloc")]
     fn windows_mut(self, size: usize) -> WindowsMut<Self::IntoIter>
     where
         Self: Sized,
