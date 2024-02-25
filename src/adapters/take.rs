@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A Lending iterator that only lends the first `n` iterations of `iter`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Take<I> {
     iter: I,
     n: usize,
@@ -40,7 +41,7 @@ mod test {
     #[test]
     fn test() {
         assert_eq!(
-            std::iter::repeat(())
+            core::iter::repeat(())
                 .into_lending()
                 .take(5)
                 .fold(0, |count, ()| { count + 1 }),

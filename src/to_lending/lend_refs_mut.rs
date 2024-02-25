@@ -2,7 +2,8 @@ use crate::LendingIterator;
 
 /// A lending iterator that given an iterator, lends
 /// mutable references to the given iterator's items.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct LendRefsMut<I: Iterator> {
     item: Option<I::Item>,
     iter: I,
@@ -52,6 +53,6 @@ mod test {
 
     fn test_helper() -> impl for<'a> LendingIterator<Item<'a> = &'a mut Foo> {
         let w = W { x: Foo(0) };
-        std::iter::once(Foo(0)).lend_refs_mut().chain(w)
+        core::iter::once(Foo(0)).lend_refs_mut().chain(w)
     }
 }

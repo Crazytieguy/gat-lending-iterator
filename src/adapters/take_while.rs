@@ -4,6 +4,7 @@ use crate::LendingIterator;
 ///
 /// This iterator is fused.
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct TakeWhile<I, P> {
     iter: I,
     predicate: P,
@@ -23,7 +24,7 @@ impl<I, P> TakeWhile<I, P> {
 impl<I, P> LendingIterator for TakeWhile<I, P>
 where
     I: LendingIterator,
-    P: for<'a> FnMut(&I::Item<'a>) -> bool
+    P: for<'a> FnMut(&I::Item<'a>) -> bool,
 {
     type Item<'a> = I::Item<'a> where I: 'a, P: 'a;
 

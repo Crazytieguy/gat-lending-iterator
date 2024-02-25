@@ -1,8 +1,11 @@
-use std::{num::NonZeroUsize, ops::Deref};
+use ::core::{num::NonZeroUsize, ops::Deref};
+use core::{mem::transmute, ops::ControlFlow};
+
+use stable_try_trait_v2::{try_, ChangeOutputType, FromResidual, Residual, Try};
 
 use crate::{
-    Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce,
-    Skip, StepBy, Take, Zip, TakeWhile,
+    Chain, Cloned, Enumerate, ExactSizeLendingIterator, Filter, FilterMap, Map, OptionTrait,
+    Peekable, SingleArgFnMut, SingleArgFnOnce, Skip, StepBy, Take, TakeWhile, Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -10,6 +13,7 @@ use crate::{
 /// This means that the compiler will check that you finish using an item
 /// before requesting the next item, as it's not allowed for two `&mut self` to exist
 /// at the same time.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub trait LendingIterator {
     /// The type of the elements being iterated over.
     type Item<'a>
@@ -24,6 +28,7 @@ pub trait LendingIterator {
     /// Returns the bounds on the remaining length of the iterator.
     ///
     /// See [`Iterator::size_hint`].
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, None)
     }
@@ -31,6 +36,7 @@ pub trait LendingIterator {
     /// Returns the number of items in the lending iterator.
     ///
     /// See [`Iterator::count`].
+    #[inline]
     fn count(self) -> usize
     where
         Self: Sized,
@@ -38,9 +44,23 @@ pub trait LendingIterator {
         self.fold(0, |count, _| count + 1)
     }
 
+    /// Consumes the lending iterator, returning the last element that can be predicted.
+    ///
+    /// Relies on [`size_hint`](LendingIterator::size_hint) to determine the number of elements to skip.
+    ///
+    /// See [`Iterator::last`].
+    #[inline]
+    fn last(&mut self) -> Option<Self::Item<'_>> {
+        match self.size_hint().1 {
+            Some(n) => self.nth(n.saturating_sub(1)),
+            None => None,
+        }
+    }
+
     /// Advances the lending iterator by `n` elements.
     ///
     /// See [`Iterator::advance_by`].
+    #[inline]
     #[allow(clippy::missing_errors_doc)]
     fn advance_by(&mut self, n: usize) -> Result<(), NonZeroUsize> {
         for i in 0..n {
@@ -55,6 +75,7 @@ pub trait LendingIterator {
     /// Returns the `n`th element of the lending iterator.
     ///
     /// See [`Iterator::nth`].
+    #[inline]
     fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
         self.advance_by(n).ok()?;
         self.next()
@@ -64,6 +85,7 @@ pub trait LendingIterator {
     /// the given amount at each iteration.
     ///
     /// See [`Iterator::step_by`].
+    #[inline]
     fn step_by(self, step: usize) -> StepBy<Self>
     where
         Self: Sized,
@@ -75,6 +97,7 @@ pub trait LendingIterator {
     /// if the underlying iterator ends sooner.
     ///
     /// See [`Iterator::take`].
+    #[inline]
     fn take(self, n: usize) -> Take<Self>
     where
         Self: Sized,
@@ -88,10 +111,11 @@ pub trait LendingIterator {
     /// Once it returns false once, `None` is returned for all subsequent calls to [`next`].
     ///
     /// [`next`]: Self::next
+    #[inline]
     fn take_while<P>(self, predicate: P) -> TakeWhile<Self, P>
     where
         Self: Sized,
-        P: for <'a> FnMut(&Self::Item<'a>) -> bool
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
     {
         TakeWhile::new(self, predicate)
     }
@@ -99,15 +123,17 @@ pub trait LendingIterator {
     /// Takes two lending iterators and creates a new lending iterator over both in sequence.
     ///
     /// See [`Iterator::chain`].
-    fn chain<I>(self, other: I) -> Chain<Self, I>
+    #[inline]
+    fn chain<'a, I>(self, other: I) -> Chain<Self, I>
     where
-        Self: Sized,
-        for<'a> I: LendingIterator<Item<'a> = Self::Item<'a>> + 'a,
+        Self: 'a + Sized,
+        I: 'a + LendingIterator<Item<'a> = Self::Item<'a>>,
     {
         Chain::new(self, other)
     }
 
     /// 'Zips up' two lending iterators into a single lending iterator of pairs.
+    #[inline]
     fn zip<I>(self, other: I) -> Zip<Self, I>
     where
         Self: Sized,
@@ -129,35 +155,67 @@ pub trait LendingIterator {
     /// the resulting `LendingIterator` will implement [`IntoIterator`].
     ///
     /// See [`Iterator::map`].
+    #[inline]
     fn map<F>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
-        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
+        for<'all> F: SingleArgFnMut<Self::Item<'all>>,
     {
         Map::new(self, f)
+    }
+
+    /// Borrows an iterator, rather than consuming it.
+    ///
+    /// See [`Iterator::by_ref`].
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
+    /// A lending iterator method that applies a fallible function to each item in the iterator, stopping at the first error and returning that error.
+    ///
+    /// See [`Iterator::try_for_each`].
+    #[inline]
+    fn try_for_each<F, R>(&mut self, mut f: F) -> R
+    where
+        Self: Sized,
+        for<'all> F: FnMut(Self::Item<'all>) -> R,
+        R: Try<Output = ()>,
+    {
+        self.try_fold(
+            (),
+            #[inline]
+            move |(), x| f(x),
+        )
     }
 
     /// Calls a closure on each element of the lending iterator.
     ///
     /// See [`Iterator::for_each`].
-    fn for_each<F>(mut self, mut f: F)
+    #[inline]
+    fn for_each<F>(self, mut f: F)
     where
         Self: Sized,
-        F: FnMut(Self::Item<'_>),
+        for<'all> F: FnMut(Self::Item<'all>),
     {
-        while let Some(item) = self.next() {
-            f(item);
-        }
+        self.fold(
+            (),
+            #[inline]
+            move |(), item| f(item),
+        );
     }
 
     /// Creates a lending iterator which uses a closure to determine if an element
     /// should be yielded.
     ///
     /// See [`Iterator::filter`].
+    #[inline]
     fn filter<P>(self, predicate: P) -> Filter<Self, P>
     where
         Self: Sized,
-        P: for<'a> FnMut(&Self::Item<'a>) -> bool,
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
     {
         Filter::new(self, predicate)
     }
@@ -165,29 +223,48 @@ pub trait LendingIterator {
     /// Creates a lending iterator that both filters and maps.
     ///
     /// See [`Iterator::filter_map`].
+    #[inline]
     fn filter_map<F>(self, f: F) -> FilterMap<Self, F>
     where
         Self: Sized,
-        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
-        for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
+        for<'all> F: SingleArgFnMut<Self::Item<'all>>,
+        for<'all> <F as SingleArgFnOnce<Self::Item<'all>>>::Output: OptionTrait,
     {
         FilterMap::new(self, f)
+    }
+
+    /// A lending iterator method that applies a function as long as it returns successfully, producing a single, final value.
+    ///
+    /// See [`Iterator::try_fold`].
+    #[inline]
+    fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
+    where
+        Self: Sized,
+        for<'all> F: FnMut(B, Self::Item<'all>) -> R,
+        R: Try<Output = B>,
+    {
+        let mut acc = init;
+        while let Some(x) = self.next() {
+            acc = try_!(f(acc, x));
+        }
+        Try::from_output(acc)
     }
 
     /// Folds every element into an accumulator by applying an operation,
     /// returning the final result.
     ///
     /// See [`Iterator::fold`].
+    #[inline]
     fn fold<B, F>(mut self, init: B, mut f: F) -> B
     where
         Self: Sized,
-        F: FnMut(B, Self::Item<'_>) -> B,
+        for<'all> F: FnMut(B, Self::Item<'all>) -> B,
     {
-        let mut accum = init;
+        let mut acc = init;
         while let Some(x) = self.next() {
-            accum = f(accum, x);
+            acc = f(acc, x);
         }
-        accum
+        acc
     }
 
     /// Creates a lending iterator which [`clone`]s all of its elements.
@@ -197,16 +274,18 @@ pub trait LendingIterator {
     /// See [`Iterator::cloned`].
     ///
     /// [`clone`]: Clone::clone
-    fn cloned<T>(self) -> Cloned<Self>
+    #[inline]
+    fn cloned<'a, T>(self) -> Cloned<Self>
     where
-        Self: Sized,
-        for<'a> Self::Item<'a>: Deref<Target = T>,
+        Self: Sized + 'a,
+        Self::Item<'a>: Deref<Target = T>,
         T: Clone,
     {
         Cloned::new(self)
     }
 
     /// Creates a lending iterator which gives the current iteration count as well as the next value.
+    #[inline]
     fn enumerate(self) -> Enumerate<Self>
     where
         Self: Sized,
@@ -214,11 +293,121 @@ pub trait LendingIterator {
         Enumerate::new(self)
     }
 
+    /// Creates an iterator which can use the [`peek`] and [`peek_mut`] methods
+    /// to look at the next element of the iterator without consuming it.
+    ///
+    /// see [`Iterator::peekable`].
+    ///
+    /// [`peek`]: Peekable::peek
+    /// [`peek_mut`]: Peekable::peek_mut
+    #[inline]
+    fn peekable<'a>(self) -> Peekable<'a, Self>
+    where
+        Self: Sized,
+    {
+        Peekable::new(self)
+    }
+
     /// Creates a lending iterator that skips over the first `n` elements of self.
+    #[inline]
     fn skip(self, n: usize) -> Skip<Self>
     where
         Self: Sized,
     {
         Skip::new(self, n)
+    }
+
+    /// Creates an iterator that [`skip`]s elements based on a predicate.
+    ///
+    /// see [`Iterator::skip_while`].
+    ///
+    /// [`skip`]: Iterator::skip
+    // #[inline]
+    // #[doc(alias = "drop_while")]
+    // fn skip_while<P>(self, predicate: P) -> SkipWhile<Self, P>
+    // where
+    //     Self: Sized,
+    //     for<'all> P: FnMut(&Self::Item<'all>) -> bool,
+    // {
+    //     SkipWhile::new(self, predicate)
+    // }
+
+    /// Searches for an element of an iterator that satisfies a predicate.
+    ///
+    /// see [`Iterator::find`]
+    #[inline]
+    fn find<'a, P>(&'a mut self, mut predicate: P) -> Option<Self::Item<'a>>
+    where
+        Self: Sized,
+        for<'all> P: FnMut(&Self::Item<'all>) -> bool,
+    {
+        while let Some(x) = self.next() {
+            if predicate(&x) {
+                // SAFETY: `x` is the last value yielded by `self`. polonious return
+                return Some(unsafe { transmute::<Self::Item<'_>, Self::Item<'a>>(x) });
+            }
+        }
+        None
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first non-none result.
+    ///
+    /// see [`Iterator::find_map`]
+    #[inline]
+    fn find_map<B, F>(&mut self, mut f: F) -> Option<B>
+    where
+        Self: Sized,
+        for<'all> F: FnMut(Self::Item<'all>) -> Option<B>,
+    {
+        while let Some(x) = self.next() {
+            if let Some(x) = f(x) {
+                return Some(x);
+            }
+        }
+        None
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first true result or the first error.
+    ///
+    /// see [`Iterator::try_find`]
+    #[inline]
+    fn try_find<F, R>(&mut self, mut f: F) -> ChangeOutputType<R, Option<Self::Item<'_>>>
+    where
+        Self: Sized,
+        F: for<'all> FnMut(&Self::Item<'all>) -> R,
+        R: Try<Output = bool>,
+        for<'all> R::Residual: Residual<Option<Self::Item<'all>>>,
+    {
+        // SAFETY: `self` is not used after early return. polonious return
+        while let Some(x) = unsafe { &mut *(self as *mut Self) }.next() {
+            match f(&x).branch() {
+                ControlFlow::Continue(false) => (),
+                ControlFlow::Continue(true) => return Try::from_output(Some(x)),
+                ControlFlow::Break(r) => return FromResidual::from_residual(r),
+            }
+        }
+        Try::from_output(None)
+    }
+}
+
+impl<I: LendingIterator + ?Sized> LendingIterator for &mut I {
+    type Item<'a> = I::Item<'a> where Self: 'a;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        (**self).next()
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (**self).size_hint()
+    }
+    #[inline]
+    fn advance_by(&mut self, n: usize) -> Result<(), NonZeroUsize> {
+        (**self).advance_by(n)
+    }
+    #[inline]
+    fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
+        (**self).nth(n)
     }
 }

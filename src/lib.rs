@@ -78,9 +78,12 @@
 //! 2
 //! 3
 //! ```
-
-#![deny(missing_docs)]
+#![deny(missing_docs, clippy::undocumented_unsafe_blocks)]
 #![warn(clippy::pedantic)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod adapters;
 mod to_lending;
@@ -91,6 +94,8 @@ pub use self::traits::*;
 
 #[cfg(test)]
 mod tests {
+    #[cfg(not(feature = "std"))]
+    compile_error!("tests require the std feature");
     use super::*;
 
     fn second(slice: &[usize]) -> &usize {

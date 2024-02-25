@@ -1,7 +1,8 @@
 use crate::LendingIterator;
 
 /// A lending iterator that yields the current count and the element during iteration.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Enumerate<I> {
     count: usize,
     iter: I,
@@ -71,9 +72,9 @@ mod test {
     fn test() {
         let first = Some((0, ()));
         let second = Some((1, ()));
-        let mut delay_iter = Delay::new(1, std::iter::repeat(()).take(2)).enumerate();
+        let mut delay_iter = Delay::new(1, core::iter::repeat(()).take(2)).enumerate();
         let mut delay_lending =
-            Delay::new(1, std::iter::repeat(()).into_lending().take(2)).enumerate();
+            Delay::new(1, core::iter::repeat(()).into_lending().take(2)).enumerate();
 
         assert_eq!((None, None), (delay_iter.next(), delay_lending.next()));
         assert_eq!((first, first), (delay_iter.next(), delay_lending.next()));

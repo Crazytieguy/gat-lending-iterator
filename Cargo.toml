@@ -11,3 +11,12 @@ readme = "README.md"
 keywords = ["iterator", "lending", "gat"]
 categories = ["algorithms", "rust-patterns"]
 rust-version = "1.65"
+
+[features]
+default = []
+alloc = []
+std = ["alloc"]
+
+[dependencies]
+# NOTE: could totally remove and include as a single file, just depended on to avoid hassle
+stable_try_trait_v2 = { version = "1.75" }

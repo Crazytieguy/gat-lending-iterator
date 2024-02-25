@@ -8,7 +8,8 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`chain`]: crate::LendingIterator::chain
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Chain<A, B> {
     a: A,
     b: B,
