@@ -128,5 +128,10 @@ mod tests {
             .for_each(|(a, b)| {
                 println!("{a:?}, {b:?}");
             });
+        
+        (0..5)
+            .windows(2)
+            .skip_while(|w| w[0] < 2)
+            .fold(0, |acc, x| acc + x[1]);
     }
 }
