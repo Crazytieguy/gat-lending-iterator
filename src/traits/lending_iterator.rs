@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
@@ -245,5 +246,320 @@ pub trait LendingIterator {
         P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         SkipWhile::new(self, predicate)
+    }
+
+    /// Borrows the lending iterator.
+    /// 
+    /// This is useful to allow applying iterator adapters while still
+    /// retaining ownership of the original iterator.
+    /// 
+    /// Unfortunately adapters that take in a closure are currently
+    /// incompatible with this, due to limitations in the borrow checker.
+    #[inline]
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
+    /// Tests if every element of the iterator matches a predicate.
+    #[inline]
+    fn all<P>(&mut self, mut predicate: P) -> bool
+    where
+        P: FnMut(Self::Item<'_>) -> bool,
+    {
+        while let Some(item) = self.next() {
+            if !predicate(item) {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Tests if any element of the iterator matches a predicate.
+    #[inline]
+    fn any<P>(&mut self, mut predicate: P) -> bool
+    where
+        P: FnMut(Self::Item<'_>) -> bool,
+    {
+        while let Some(item) = self.next() {
+            if predicate(item) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Checks if the elements of this iterator are partitioned according to the given predicate,
+    /// such that all those that return `true` precede all those that return `false`.
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_partitioned<P>(mut self, mut predicate: P) -> bool
+    where
+        Self: Sized,
+        P: FnMut(Self::Item<'_>) -> bool,
+    {
+        while let Some(item) = self.next() {
+            if !predicate(item) {
+                break
+            }
+        }
+        while let Some(item) = self.next() {
+            if predicate(item) {
+                return false
+            }
+        }
+        true
+    }
+
+    /// Searches for an element of an iterator that satisfies a predicate.
+    #[inline]
+    fn find<P>(&mut self, mut predicate: P) -> Option<Self::Item<'_>>
+    where
+        P: FnMut(&Self::Item<'_>) -> bool,
+    {
+        loop {
+            // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
+            let self_ = unsafe { &mut *(self as *mut Self) };
+            if let Some(item) = self_.next() {
+                if (predicate)(&item) {
+                    return Some(item);
+                }
+            } else {
+                return None;
+            }
+        }
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first non-none result.
+    #[inline]
+    fn find_map<B, F>(&mut self, mut f: F) -> Option<B>
+    where
+        F: FnMut(Self::Item<'_>) -> Option<B>,
+    {
+        loop {
+            // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
+            let self_ = unsafe { &mut *(self as *mut Self) };
+            if let Some(item) = self_.next() {
+                if let Some(result) = f(item) {
+                    return Some(result);
+                }
+            } else {
+                return None;
+            }
+        }
+    }
+
+    /// Searches for an element in an iterator, returning its index.
+    #[inline]
+    fn position<P>(&mut self, mut predicate: P) -> Option<usize>
+    where
+        P: FnMut(Self::Item<'_>) -> bool,
+    {
+        let mut i = 0;
+        while let Some(item) = self.next() {
+            if predicate(item) {
+                return Some(i);
+            }
+            i += 1;
+        }
+        None
+    }
+
+    /// [Lexicographically](Ord#lexicographical-comparison) compares the elements of this [`Iterator`] with those
+    /// of another.
+    fn cmp<I>(mut self, mut other: I) -> Ordering
+    where
+        I: for<'a> LendingIterator<Item<'a> = Self::Item<'a>>,
+        for<'a> Self::Item<'a>: Ord,
+        Self: Sized,
+    {
+        // TODO: this could be implemented as `self.cmp_by(other, |x, y| x.cmp(y))`
+        // except that doesn't type check due to lifetime issues.
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => match x.cmp(&y) {
+                    Ordering::Equal => continue,
+                    non_eq => return non_eq,
+                },
+                (None, None) => return Ordering::Equal,
+                (None, _) => return Ordering::Less,
+                (_, None) => return Ordering::Greater,
+            }
+        }
+    }
+
+    /// [Lexicographically](Ord#lexicographical-comparison) compares the elements of this [`Iterator`] with those
+    /// of another with respect to the specified comparison function.
+    fn cmp_by<I, F>(mut self, mut other: I, mut cmp: F) -> Ordering
+    where
+        Self: Sized,
+        I: LendingIterator,
+        F: FnMut(Self::Item<'_>, I::Item<'_>) -> Ordering,
+    {
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => match cmp(x, y) {
+                    Ordering::Equal => continue,
+                    non_eq => return non_eq,
+                },
+                (None, None) => return Ordering::Equal,
+                (None, _) => return Ordering::Less,
+                (_, None) => return Ordering::Greater,
+            }
+        }
+    }
+
+    /// [Lexicographically](Ord#lexicographical-comparison) compares the [`PartialOrd`] elements of
+    /// this [`Iterator`] with those of another. The comparison works like short-circuit
+    /// evaluation, returning a result without comparing the remaining elements.
+    /// As soon as an order can be determined, the evaluation stops and a result is returned.
+    fn partial_cmp<I>(mut self, mut other: I) -> Option<Ordering>
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
+        Self: Sized,
+    {
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => match x.partial_cmp(&y) {
+                    Some(Ordering::Equal) => continue,
+                    non_eq => return non_eq,
+                },
+                (None, None) => return Some(Ordering::Equal),
+                (None, _) => return Some(Ordering::Less),
+                (_, None) => return Some(Ordering::Greater),
+            }
+        }
+    }
+
+    /// [Lexicographically](Ord#lexicographical-comparison) compares the elements of this [`Iterator`] with those
+    /// of another with respect to the specified comparison function.
+    fn partial_cmp_by<I, F>(mut self, mut other: I, mut partial_cmp: F) -> Option<Ordering>
+    where
+        Self: Sized,
+        I: LendingIterator,
+        F: FnMut(Self::Item<'_>, I::Item<'_>) -> Option<Ordering>,
+    {
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => match partial_cmp(x, y) {
+                    Some(Ordering::Equal) => continue,
+                    non_eq => return non_eq,
+                },
+                (None, None) => return Some(Ordering::Equal),
+                (None, _) => return Some(Ordering::Less),
+                (_, None) => return Some(Ordering::Greater),
+            }
+        }
+    }
+
+    /// Determines if the elements of this [`Iterator`] are equal to those of
+    /// another.
+    fn eq<I>(mut self, mut other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialEq<I::Item<'a>>,
+        Self: Sized,
+    {
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => if x != y {
+                    return false;
+                },
+                (None, None) => return true,
+                _ => return false,
+            }
+        }
+    }
+
+    /// Determines if the elements of this [`Iterator`] are equal to those of
+    /// another with respect to the specified equality function.
+    fn eq_by<I, F>(mut self, mut other: I, mut eq: F) -> bool
+    where
+        Self: Sized,
+        I: LendingIterator,
+        F: FnMut(Self::Item<'_>, I::Item<'_>) -> bool,
+    {
+        loop {
+            match (self.next(), other.next()) {
+                (Some(x), Some(y)) => if !eq(x, y) {
+                    return false;
+                },
+                (None, None) => return true,
+                _ => return false,
+            }
+        }
+    }
+
+    /// Determines if the elements of this [`Iterator`] are not equal to those of
+    /// another.
+    fn ne<I>(self, other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialEq<I::Item<'a>>,
+        Self: Sized,
+    {
+        !self.eq(other)
+    }
+
+    /// Determines if the elements of this [`Iterator`] are [lexicographically](Ord#lexicographical-comparison)
+    /// less than those of another.
+    fn lt<I>(self, other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
+        Self: Sized,
+    {
+        self.partial_cmp(other) == Some(Ordering::Less)
+    }
+
+    /// Determines if the elements of this [`Iterator`] are [lexicographically](Ord#lexicographical-comparison)
+    /// less or equal to those of another.
+    fn le<I>(self, other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
+        Self: Sized,
+    {
+        matches!(self.partial_cmp(other), Some(Ordering::Less | Ordering::Equal))
+    }
+
+    /// Determines if the elements of this [`Iterator`] are [lexicographically](Ord#lexicographical-comparison)
+    /// greater than those of another.
+    fn gt<I>(self, other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
+        Self: Sized,
+    {
+        self.partial_cmp(other) == Some(Ordering::Greater)
+    }
+
+    /// Determines if the elements of this [`Iterator`] are [lexicographically](Ord#lexicographical-comparison)
+    /// greater or equal to those of another.
+    fn ge<I>(self, other: I) -> bool
+    where
+        I: LendingIterator,
+        for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
+        Self: Sized,
+    {
+        matches!(self.partial_cmp(other), Some(Ordering::Greater | Ordering::Equal))
+    }
+}
+
+impl<T: LendingIterator> LendingIterator for &mut T {
+    type Item<'a> = T::Item<'a> where Self: 'a;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        (**self).next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (**self).size_hint()
     }
 }
