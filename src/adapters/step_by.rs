@@ -7,7 +7,8 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`step_by`]: crate::LendingIterator::step_by
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct StepBy<I> {
     iter: I,
     step: usize,
@@ -15,6 +16,7 @@ pub struct StepBy<I> {
 }
 
 impl<I> StepBy<I> {
+    #[inline]
     pub(crate) fn new(iter: I, step: usize) -> StepBy<I> {
         assert!(step != 0);
         StepBy {
@@ -34,6 +36,7 @@ where
             Self: 'a
     ;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.first_take {
             self.first_take = false;

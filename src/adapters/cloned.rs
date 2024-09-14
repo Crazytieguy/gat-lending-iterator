@@ -9,7 +9,8 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`cloned`]: crate::LendingIterator::cloned
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Cloned<I> {
     iter: I,
 }

@@ -8,7 +8,8 @@ use crate::LendingIterator;
 ///
 /// [`LendingIterator`]: crate::LendingIterator
 /// [`chain`]: crate::LendingIterator::chain
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Chain<A, B> {
     a: A,
     b: B,
@@ -34,6 +35,7 @@ where
             Self: 'a
     ;
 
+    #[inline]
     fn next(&mut self) -> Option<A::Item<'_>> {
         if self.a_done {
             self.b.next()
