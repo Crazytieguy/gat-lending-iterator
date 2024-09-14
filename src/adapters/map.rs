@@ -23,7 +23,7 @@ impl<I, F> Map<I, F> {
 
 impl<I: fmt::Debug, F> fmt::Debug for Map<I, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Map").field("iter", &self.iter).finish()
+        f.debug_struct("Map").field("iter", &self.iter).finish_non_exhaustive()
     }
 }
 

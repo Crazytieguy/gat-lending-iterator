@@ -25,7 +25,7 @@ impl<I: fmt::Debug, F> fmt::Debug for FilterMap<I, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FilterMap")
             .field("iter", &self.iter)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 

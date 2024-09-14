@@ -27,7 +27,7 @@ impl<I: fmt::Debug, P> fmt::Debug for TakeWhile<I, P> {
         f.debug_struct("TakeWhile")
             .field("iter", &self.iter)
             .field("done", &self.done)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
