@@ -55,3 +55,26 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn positive_double(x: i32) -> Option<i32> {
+        if x >= 0 {
+            Some(x * 2)
+        } else {
+            None
+        }
+    }
+
+    #[test]
+    fn filter_map_basic() {
+        let mut result = Vec::new();
+        vec![-1, 2, -3, 4]
+            .into_lending()
+            .filter_map(positive_double)
+            .for_each(|x| result.push(x));
+        assert_eq!(result, vec![4, 8]);
+    }
+}

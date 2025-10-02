@@ -83,4 +83,13 @@ mod test {
         assert_eq!((second, second), (delay_iter.next(), delay_lending.next()));
         assert_eq!((None, None), (delay_iter.next(), delay_lending.next()));
     }
+
+    #[test]
+    fn enumerate_basic() {
+        let mut iter = (10..13).into_lending().enumerate();
+        assert_eq!(iter.next(), Some((0, 10)));
+        assert_eq!(iter.next(), Some((1, 11)));
+        assert_eq!(iter.next(), Some((2, 12)));
+        assert_eq!(iter.next(), None);
+    }
 }

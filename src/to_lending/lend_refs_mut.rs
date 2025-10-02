@@ -54,4 +54,14 @@ mod test {
         let w = W { x: Foo(0) };
         std::iter::once(Foo(0)).lend_refs_mut().chain(w)
     }
+
+    #[test]
+    fn lend_refs_mut_basic() {
+        let mut sum = 0;
+        vec![1, 2, 3].lend_refs_mut().for_each(|x| {
+            *x *= 2;
+            sum += *x;
+        });
+        assert_eq!(sum, 12);
+    }
 }

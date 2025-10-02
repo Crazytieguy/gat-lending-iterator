@@ -62,3 +62,23 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn identity(x: i32) -> i32 {
+        x
+    }
+
+    #[test]
+    fn take_while_basic() {
+        let result: Vec<_> = (0..10)
+            .into_lending()
+            .take_while(|&x| x < 5)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![0, 1, 2, 3, 4]);
+    }
+}

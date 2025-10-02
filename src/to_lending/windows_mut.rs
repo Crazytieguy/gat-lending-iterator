@@ -38,3 +38,33 @@ impl<I: Iterator> LendingIterator for WindowsMut<I> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn accumulate_window(w: &mut [i32]) -> i32 {
+        w[1] += w[0];
+        w[1]
+    }
+
+    #[test]
+    fn windows_mut_basic() {
+        let result: Vec<_> = (0..5)
+            .windows_mut(2)
+            .map(accumulate_window)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![1, 3, 6, 10]);
+    }
+
+    #[test]
+    fn windows_mut_modifies_elements() {
+        let mut sum = 0;
+        (0..4).windows_mut(2).for_each(|w| {
+            w[0] = w[0] * 2;
+            sum += w[0];
+        });
+        assert_eq!(sum, 6);
+    }
+}

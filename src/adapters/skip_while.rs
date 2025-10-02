@@ -64,3 +64,23 @@ where
     // TODO: there's a `fold` optimization possible here,
     // but for some reason the lifetimes don't type check
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn identity(x: i32) -> i32 {
+        x
+    }
+
+    #[test]
+    fn skip_while_basic() {
+        let result: Vec<_> = (0..10)
+            .into_lending()
+            .skip_while(|&x| x < 5)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![5, 6, 7, 8, 9]);
+    }
+}

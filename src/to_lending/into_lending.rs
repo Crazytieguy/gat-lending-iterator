@@ -23,3 +23,22 @@ impl<I: Iterator> LendingIterator for IntoLending<I> {
         self.iter.size_hint()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn double_i32(x: i32) -> i32 {
+        x * 2
+    }
+
+    #[test]
+    fn into_lending_basic() {
+        let result: Vec<_> = vec![1, 2, 3]
+            .into_lending()
+            .map(double_i32)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![2, 4, 6]);
+    }
+}
