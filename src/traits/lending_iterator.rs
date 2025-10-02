@@ -2,7 +2,7 @@ use core::cmp::Ordering;
 use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
-    Chain, Cloned, Enumerate, Filter, FilterMap, Map, OptionTrait, SingleArgFnMut, SingleArgFnOnce, Skip, SkipWhile, StepBy, Take, TakeWhile, Zip
+    Chain, Cloned, Copied, Cycle, Enumerate, Filter, FilterMap, Fuse, Inspect, Map, MapWhile, OptionTrait, Scan, SingleArgFnMut, SingleArgFnOnce, Skip, SkipWhile, StepBy, Take, TakeWhile, Zip
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -220,6 +220,21 @@ pub trait LendingIterator {
         Cloned::new(self)
     }
 
+    /// Creates a lending iterator which copies all of its elements.
+    ///
+    /// The resulting lending iterator implements [`IntoIterator`].
+    ///
+    /// See [`Iterator::copied`].
+    #[inline]
+    fn copied<T>(self) -> Copied<Self>
+    where
+        Self: Sized,
+        for<'a> Self::Item<'a>: Deref<Target = T>,
+        T: Copy,
+    {
+        Copied::new(self)
+    }
+
     /// Creates a lending iterator which gives the current iteration count as well as the next value.
     #[inline]
     fn enumerate(self) -> Enumerate<Self>
@@ -246,6 +261,67 @@ pub trait LendingIterator {
         P: for<'a> FnMut(&Self::Item<'a>) -> bool,
     {
         SkipWhile::new(self, predicate)
+    }
+
+    /// Creates a lending iterator that yields the current element unchanged,
+    /// while calling a provided function with a reference to that element.
+    ///
+    /// See [`Iterator::inspect`].
+    #[inline]
+    fn inspect<F>(self, f: F) -> Inspect<Self, F>
+    where
+        Self: Sized,
+        F: for<'a> FnMut(&Self::Item<'a>),
+    {
+        Inspect::new(self, f)
+    }
+
+    /// Creates a lending iterator that yields elements transformed by a stateful closure.
+    ///
+    /// See [`Iterator::scan`].
+    #[inline]
+    fn scan<St, F>(self, initial_state: St, f: F) -> Scan<Self, St, F>
+    where
+        Self: Sized,
+    {
+        Scan::new(self, initial_state, f)
+    }
+
+    /// Creates a lending iterator that yields elements while the predicate returns `Some`.
+    ///
+    /// See [`Iterator::map_while`].
+    #[inline]
+    fn map_while<F>(self, f: F) -> MapWhile<Self, F>
+    where
+        Self: Sized,
+        F: for<'a> SingleArgFnMut<Self::Item<'a>>,
+        for<'a> <F as SingleArgFnOnce<Self::Item<'a>>>::Output: OptionTrait,
+    {
+        MapWhile::new(self, f)
+    }
+
+    /// Creates a lending iterator which can use the [`peek`] method
+    /// to look at the next element without consuming it. Returns `None`
+    /// when iteration is finished.
+    ///
+    /// See [`Iterator::fuse`].
+    #[inline]
+    fn fuse(self) -> Fuse<Self>
+    where
+        Self: Sized,
+    {
+        Fuse::new(self)
+    }
+
+    /// Creates a lending iterator that repeats elements endlessly by cloning the iterator.
+    ///
+    /// See [`Iterator::cycle`].
+    #[inline]
+    fn cycle(self) -> Cycle<Self>
+    where
+        Self: Sized + Clone,
+    {
+        Cycle::new(self)
     }
 
     /// Borrows the lending iterator.
@@ -547,6 +623,290 @@ pub trait LendingIterator {
         Self: Sized,
     {
         matches!(self.partial_cmp(other), Some(Ordering::Greater | Ordering::Equal))
+    }
+
+    /// Reduces the elements to a single one, by repeatedly applying a reducing
+    /// operation.
+    ///
+    /// If the iterator is empty, returns [`None`]; otherwise, returns the
+    /// result of the reduction.
+    ///
+    /// The reducing function takes an accumulator and an element and returns a new accumulator.
+    /// For lending iterators, since items borrow from `&mut self`, the accumulator must be
+    /// an owned type that doesn't borrow from the iterator.
+    ///
+    /// See [`Iterator::reduce`].
+    #[inline]
+    fn reduce<B, F>(mut self, f: F) -> Option<B>
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item<'_>) -> B,
+        B: for<'a> From<Self::Item<'a>>,
+    {
+        let first = B::from(self.next()?);
+        Some(self.fold(first, f))
+    }
+
+    /// An iterator method that applies a fallible function to each item in the
+    /// iterator, stopping at the first error and returning that error.
+    ///
+    /// After an error is returned, the iterator may be in an unspecified state.
+    ///
+    /// See [`Iterator::try_fold`].
+    #[inline]
+    fn try_fold<B, F, E>(&mut self, init: B, mut f: F) -> Result<B, E>
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item<'_>) -> Result<B, E>,
+    {
+        let mut accum = init;
+        while let Some(x) = self.next() {
+            accum = f(accum, x)?;
+        }
+        Ok(accum)
+    }
+
+    /// An iterator method that applies a fallible function to each item in the
+    /// iterator, stopping at the first error and returning that error.
+    ///
+    /// See [`Iterator::try_for_each`].
+    #[inline]
+    fn try_for_each<F, E>(&mut self, mut f: F) -> Result<(), E>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
+    {
+        while let Some(x) = self.next() {
+            f(x)?;
+        }
+        Ok(())
+    }
+
+    /// Applies function to the elements of iterator and returns
+    /// the first true result or the first error.
+    ///
+    /// See [`Iterator::try_find`].
+    #[inline]
+    fn try_find<F, R>(&mut self, mut f: F) -> Result<Option<Self::Item<'_>>, R>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item<'_>) -> Result<bool, R>,
+    {
+        loop {
+            let self_ = unsafe { &mut *(self as *mut Self) };
+            if let Some(item) = self_.next() {
+                match f(&item) {
+                    Ok(true) => return Ok(Some(item)),
+                    Ok(false) => continue,
+                    Err(e) => return Err(e),
+                }
+            } else {
+                return Ok(None);
+            }
+        }
+    }
+
+    /// Reduces the elements to a single one by repeatedly applying a reducing operation.
+    /// If the closure returns a failure, the failure is propagated back to the caller immediately.
+    ///
+    /// For lending iterators, the accumulator must be an owned type since items borrow from `&mut self`.
+    ///
+    /// See [`Iterator::try_reduce`].
+    #[inline]
+    fn try_reduce<B, F, E>(mut self, f: F) -> Result<Option<B>, E>
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item<'_>) -> Result<B, E>,
+        B: for<'a> From<Self::Item<'a>>,
+    {
+        let first = B::from(match self.next() {
+            Some(i) => i,
+            None => return Ok(None),
+        });
+        self.try_fold(first, f).map(Some)
+    }
+
+    /// Returns the maximum element of an iterator.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item,
+    /// as we need to hold onto the maximum value while iterating through borrowed items.
+    ///
+    /// See [`Iterator::max`].
+    #[inline]
+    fn max<T>(mut self) -> Option<T>
+    where
+        Self: Sized,
+        T: Ord + for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        Some(self.fold(first, |max, x| {
+            let x = T::from(x);
+            if x > max {
+                x
+            } else {
+                max
+            }
+        }))
+    }
+
+    /// Returns the minimum element of an iterator.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item,
+    /// as we need to hold onto the minimum value while iterating through borrowed items.
+    ///
+    /// See [`Iterator::min`].
+    #[inline]
+    fn min<T>(mut self) -> Option<T>
+    where
+        Self: Sized,
+        T: Ord + for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        Some(self.fold(first, |min, x| {
+            let x = T::from(x);
+            if x < min {
+                x
+            } else {
+                min
+            }
+        }))
+    }
+
+    /// Returns the element that gives the maximum value from the specified function.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item.
+    ///
+    /// See [`Iterator::max_by`].
+    #[inline]
+    fn max_by<T, F>(mut self, mut compare: F) -> Option<T>
+    where
+        Self: Sized,
+        F: FnMut(&T, &T) -> Ordering,
+        T: for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        Some(self.fold(first, |max, x| {
+            let x = T::from(x);
+            match compare(&x, &max) {
+                Ordering::Greater => x,
+                _ => max,
+            }
+        }))
+    }
+
+    /// Returns the element that gives the minimum value from the specified function.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item.
+    ///
+    /// See [`Iterator::min_by`].
+    #[inline]
+    fn min_by<T, F>(mut self, mut compare: F) -> Option<T>
+    where
+        Self: Sized,
+        F: FnMut(&T, &T) -> Ordering,
+        T: for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        Some(self.fold(first, |min, x| {
+            let x = T::from(x);
+            match compare(&x, &min) {
+                Ordering::Less => x,
+                _ => min,
+            }
+        }))
+    }
+
+    /// Returns the element that gives the maximum value with respect to the
+    /// specified key function.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item.
+    ///
+    /// See [`Iterator::max_by_key`].
+    #[inline]
+    fn max_by_key<T, B, F>(mut self, mut f: F) -> Option<T>
+    where
+        Self: Sized,
+        B: Ord,
+        F: FnMut(&T) -> B,
+        T: for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        let first_key = f(&first);
+        Some(self.fold((first, first_key), |(max, max_key), x| {
+            let x = T::from(x);
+            let x_key = f(&x);
+            if x_key > max_key {
+                (x, x_key)
+            } else {
+                (max, max_key)
+            }
+        }).0)
+    }
+
+    /// Returns the element that gives the minimum value with respect to the
+    /// specified key function.
+    ///
+    /// For lending iterators, this returns an owned value converted from the item.
+    ///
+    /// See [`Iterator::min_by_key`].
+    #[inline]
+    fn min_by_key<T, B, F>(mut self, mut f: F) -> Option<T>
+    where
+        Self: Sized,
+        B: Ord,
+        F: FnMut(&T) -> B,
+        T: for<'a> From<Self::Item<'a>>,
+    {
+        let first = T::from(self.next()?);
+        let first_key = f(&first);
+        Some(self.fold((first, first_key), |(min, min_key), x| {
+            let x = T::from(x);
+            let x_key = f(&x);
+            if x_key < min_key {
+                (x, x_key)
+            } else {
+                (min, min_key)
+            }
+        }).0)
+    }
+
+    /// Sums the elements of an iterator.
+    ///
+    /// Takes each element, converts it to the sum type, and adds them together.
+    ///
+    /// An empty iterator returns the zero value of the type.
+    ///
+    /// For lending iterators, items must be convertible to the sum type.
+    ///
+    /// See [`Iterator::sum`].
+    #[inline]
+    fn sum<S>(self) -> S
+    where
+        Self: Sized,
+        for<'a> S: std::ops::AddAssign<Self::Item<'a>> + Default,
+    {
+        let mut sum = S::default();
+        self.for_each(|item| sum += item);
+        sum
+    }
+
+    /// Iterates over the entire iterator, multiplying all the elements
+    ///
+    /// An empty iterator returns the one value of the type.
+    ///
+    /// For lending iterators, items must be multiplicable with the product type.
+    ///
+    /// See [`Iterator::product`].
+    #[inline]
+    fn product<P>(self) -> P
+    where
+        Self: Sized,
+        for<'a> P: std::ops::MulAssign<Self::Item<'a>>,
+        P: From<u8>,
+    {
+        let mut product = P::from(1u8);
+        self.for_each(|item| product *= item);
+        product
     }
 }
 
