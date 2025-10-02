@@ -41,10 +41,36 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::ToLendingIterator;
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn identity(x: i32) -> i32 {
+        x
+    }
+
     #[test]
     fn test() {
         assert_eq!((0..5).into_lending().skip(1).nth(1), (0..5).skip(1).nth(1));
+    }
+
+    #[test]
+    fn skip_basic() {
+        let result: Vec<_> = (0..5)
+            .into_lending()
+            .skip(2)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![2, 3, 4]);
+    }
+
+    #[test]
+    fn skip_more_than_available() {
+        let result: Vec<_> = (0..3)
+            .into_lending()
+            .skip(10)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![]);
     }
 }

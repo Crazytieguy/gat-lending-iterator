@@ -37,8 +37,12 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::ToLendingIterator;
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn identity(x: i32) -> i32 {
+        x
+    }
+
     #[test]
     fn test() {
         assert_eq!(
@@ -48,5 +52,27 @@ mod test {
                 .fold(0, |count, ()| { count + 1 }),
             5
         );
+    }
+
+    #[test]
+    fn take_basic() {
+        let result: Vec<_> = (0..10)
+            .into_lending()
+            .take(3)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn take_more_than_available() {
+        let result: Vec<_> = (0..3)
+            .into_lending()
+            .take(10)
+            .map(identity)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![0, 1, 2]);
     }
 }

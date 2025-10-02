@@ -47,3 +47,26 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn to_vec_i32(w: &[i32]) -> Vec<i32> {
+        w.to_vec()
+    }
+
+    #[test]
+    fn chain_basic() {
+        let result: Vec<_> = (0..3)
+            .windows(2)
+            .chain((5..8).windows(2))
+            .map(to_vec_i32)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![
+            vec![0, 1], vec![1, 2],
+            vec![5, 6], vec![6, 7]
+        ]);
+    }
+}

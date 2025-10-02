@@ -66,3 +66,19 @@ where
         IntoIter { iter: self.iter }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    #[test]
+    fn cloned_basic() {
+        let data = vec![1, 2, 3];
+        let result: Vec<_> = data
+            .lend_refs()
+            .cloned()
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+}

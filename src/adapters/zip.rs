@@ -36,3 +36,34 @@ where
         Some((a, b))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn make_pair(pair: (i32, i32)) -> (i32, i32) {
+        pair
+    }
+
+    #[test]
+    fn zip_basic() {
+        let result: Vec<_> = (0..3)
+            .into_lending()
+            .zip((10..13).into_lending())
+            .map(make_pair)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![(0, 10), (1, 11), (2, 12)]);
+    }
+
+    #[test]
+    fn zip_unequal_lengths() {
+        let result: Vec<_> = (0..5)
+            .into_lending()
+            .zip((10..12).into_lending())
+            .map(make_pair)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![(0, 10), (1, 11)]);
+    }
+}

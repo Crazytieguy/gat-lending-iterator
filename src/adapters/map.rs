@@ -77,3 +77,37 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{LendingIterator, ToLendingIterator};
+
+    fn double(x: i32) -> i32 {
+        x * 2
+    }
+
+    fn extract_second(slice: &[i32]) -> &i32 {
+        &slice[1]
+    }
+
+    #[test]
+    fn map_basic() {
+        let result: Vec<_> = (0..3)
+            .into_lending()
+            .map(double)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![0, 2, 4]);
+    }
+
+    #[test]
+    fn map_with_borrowing() {
+        let result: Vec<_> = (0..5)
+            .windows(3)
+            .map(extract_second)
+            .cloned()
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+}

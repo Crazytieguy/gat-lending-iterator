@@ -93,45 +93,235 @@ pub use self::traits::*;
 mod tests {
     use super::*;
 
-    fn second(slice: &[usize]) -> &usize {
+    #[test]
+    fn count_basic() {
+        assert_eq!((0..5).windows(2).count(), 4);
+        assert_eq!((0..3).into_lending().count(), 3);
+        assert_eq!(std::iter::empty::<i32>().into_lending().count(), 0);
+    }
+
+    #[test]
+    fn nth_basic() {
+        let mut iter = (0..5).windows(2);
+        assert_eq!(iter.nth(0), Some(&[0, 1][..]));
+        assert_eq!(iter.nth(1), Some(&[2, 3][..]));
+        assert_eq!(iter.nth(0), Some(&[3, 4][..]));
+        assert_eq!(iter.nth(0), None);
+    }
+
+    #[test]
+    fn nth_out_of_bounds() {
+        let mut iter = (0..3).into_lending();
+        assert_eq!(iter.nth(10), None);
+    }
+
+    #[test]
+    fn advance_by_basic() {
+        let mut iter = (0..5).into_lending();
+        assert_eq!(iter.advance_by(2), Ok(()));
+        assert_eq!(iter.next(), Some(2));
+    }
+
+    #[test]
+    fn advance_by_too_far() {
+        let mut iter = (0..3).into_lending();
+        assert!(iter.advance_by(10).is_err());
+    }
+
+    #[test]
+    fn for_each_basic() {
+        let mut sum = 0;
+        (1..=5).into_lending().for_each(|x| sum += x);
+        assert_eq!(sum, 15);
+    }
+
+    #[test]
+    fn fold_basic() {
+        let sum = (1..=5).into_lending().fold(0, |acc, x| acc + x);
+        assert_eq!(sum, 15);
+    }
+
+    #[test]
+    fn fold_product() {
+        let product = (1..=5).into_lending().fold(1, |acc, x| acc * x);
+        assert_eq!(product, 120);
+    }
+
+    #[test]
+    fn all_true() {
+        assert!((0..5).into_lending().all(|x| x < 10));
+    }
+
+    #[test]
+    fn all_false() {
+        assert!(!(0..5).into_lending().all(|x| x < 3));
+    }
+
+    #[test]
+    fn all_empty() {
+        assert!(std::iter::empty::<i32>().into_lending().all(|_| false));
+    }
+
+    #[test]
+    fn any_true() {
+        assert!((0..5).into_lending().any(|x| x == 3));
+    }
+
+    #[test]
+    fn any_false() {
+        assert!(!(0..5).into_lending().any(|x| x > 10));
+    }
+
+    #[test]
+    fn any_empty() {
+        assert!(!std::iter::empty::<i32>().into_lending().any(|_| true));
+    }
+
+    #[test]
+    fn is_partitioned_true() {
+        assert!(vec![2, 4, 6, 1, 3, 5].into_lending().is_partitioned(|x| x % 2 == 0));
+    }
+
+    #[test]
+    fn is_partitioned_false() {
+        assert!(!vec![2, 1, 4, 3].into_lending().is_partitioned(|x| x % 2 == 0));
+    }
+
+    #[test]
+    fn find_found() {
+        let mut iter = (0..5).into_lending();
+        assert_eq!(iter.find(|x| *x == 3), Some(3));
+    }
+
+    #[test]
+    fn find_not_found() {
+        let mut iter = (0..5).into_lending();
+        assert_eq!(iter.find(|x| *x == 10), None);
+    }
+
+    #[test]
+    fn find_map_found() {
+        let mut iter = vec![1, -2, 3, -4].into_lending();
+        let result = iter.find_map(|x| if x < 0 { Some(-x) } else { None });
+        assert_eq!(result, Some(2));
+    }
+
+    #[test]
+    fn find_map_not_found() {
+        let mut iter = vec![1, 2, 3].into_lending();
+        let result = iter.find_map(|x| if x < 0 { Some(-x) } else { None });
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn position_found() {
+        let mut iter = (0..5).into_lending();
+        assert_eq!(iter.position(|x| x == 3), Some(3));
+    }
+
+    #[test]
+    fn position_not_found() {
+        let mut iter = (0..5).into_lending();
+        assert_eq!(iter.position(|x| x == 10), None);
+    }
+
+    #[test]
+    fn cmp_equal() {
+        use std::cmp::Ordering;
+        let result = (0i32..3).into_lending().cmp((0i32..3).into_lending());
+        assert_eq!(result, Ordering::Equal);
+    }
+
+    #[test]
+    fn cmp_less() {
+        use std::cmp::Ordering;
+        let result = (0i32..3).into_lending().cmp((0i32..5).into_lending());
+        assert_eq!(result, Ordering::Less);
+    }
+
+    #[test]
+    fn cmp_greater() {
+        use std::cmp::Ordering;
+        let result = (0i32..5).into_lending().cmp((0i32..3).into_lending());
+        assert_eq!(result, Ordering::Greater);
+    }
+
+    #[test]
+    fn cmp_by_basic() {
+        use std::cmp::Ordering;
+        let result = (0i32..3).into_lending().cmp_by((0i32..3).into_lending(), |a, b| a.cmp(&b));
+        assert_eq!(result, Ordering::Equal);
+    }
+
+    #[test]
+    fn partial_cmp_by_basic() {
+        use std::cmp::Ordering;
+        let result = (0i32..3).into_lending().partial_cmp_by((0i32..3).into_lending(), |a, b| a.partial_cmp(&b));
+        assert_eq!(result, Some(Ordering::Equal));
+    }
+
+    #[test]
+    fn eq_by_basic() {
+        assert!((0i32..3).into_lending().eq_by((0i32..3).into_lending(), |a, b| a == b));
+    }
+
+    #[test]
+    fn eq_by_false() {
+        assert!(!(0i32..3).into_lending().eq_by((1i32..4).into_lending(), |a, b| a == b));
+    }
+
+    #[test]
+    fn size_hint_basic() {
+        let iter = (0..5).into_lending();
+        assert_eq!(iter.size_hint(), (5, Some(5)));
+    }
+
+    fn to_vec_i32(w: &[i32]) -> Vec<i32> {
+        w.to_vec()
+    }
+
+    #[test]
+    fn complex_chain_windows_filter() {
+        let result: Vec<_> = (0..5)
+            .windows(3)
+            .filter(|x| x[0] % 2 == 0)
+            .chain((0..6).windows(2))
+            .map(to_vec_i32)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![
+            vec![0, 1, 2], vec![2, 3, 4],
+            vec![0, 1], vec![1, 2], vec![2, 3], vec![3, 4], vec![4, 5]
+        ]);
+    }
+
+    fn accumulate_window_usize(slice: &mut [usize]) -> usize {
+        slice[1] += slice[0];
+        slice[1]
+    }
+
+    #[test]
+    fn complex_windows_mut_map() {
+        let result: Vec<_> = (0..7)
+            .windows_mut(2)
+            .map(accumulate_window_usize)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![1, 3, 6, 10, 15, 21]);
+    }
+
+    fn second_usize(slice: &[usize]) -> &usize {
         &slice[1]
     }
 
     #[test]
-    fn playground() {
-        (0..5)
+    fn complex_windows_map_cloned() {
+        let result: Vec<_> = (0..5)
             .windows(3)
-            .filter(|x| x[0] % 2 == 0)
-            .chain((0..6).windows(2))
-            .for_each(|x| println!("{x:?}"));
-
-        println!();
-
-        for sum in (0..7).windows_mut(2).map(|slice: &mut [usize]| {
-            slice[1] += slice[0];
-            slice[1]
-        }) {
-            println!("{sum}");
-        }
-
-        println!();
-
-        for n in (0..5).windows(3).map(second).cloned() {
-            println!("{n}");
-        }
-
-        println!();
-
-        (0..5)
-            .windows(4)
-            .zip([0, 1].into_lending())
-            .for_each(|(a, b)| {
-                println!("{a:?}, {b:?}");
-            });
-        
-        (0..5)
-            .windows(2)
-            .skip_while(|w| w[0] < 2)
-            .fold(0, |acc, x| acc + x[1]);
+            .map(second_usize)
+            .cloned()
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![1, 2, 3]);
     }
 }

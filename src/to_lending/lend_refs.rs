@@ -53,4 +53,18 @@ mod test {
         let w = W { x: Foo(0) };
         std::iter::once(Foo(0)).lend_refs().chain(w)
     }
+
+    fn double_ref_i32(x: &i32) -> i32 {
+        x * 2
+    }
+
+    #[test]
+    fn lend_refs_basic() {
+        let result: Vec<_> = vec![1, 2, 3]
+            .lend_refs()
+            .map(double_ref_i32)
+            .into_iter()
+            .collect();
+        assert_eq!(result, vec![2, 4, 6]);
+    }
 }
