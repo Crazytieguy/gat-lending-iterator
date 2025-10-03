@@ -27,22 +27,14 @@ This is a Rust library implementing a lending iterator trait using Generic Assoc
 - Transform regular iterators into lending iterators
 - `Windows` and `WindowsMut` use a buffer that grows to at most size * 2 (tradeoff between memory and avoiding element shifting)
 
-## Development Commands
-
-**Build**: `cargo build --verbose`
-
-**Run all tests**: `cargo test --verbose`
-
-**Run specific test**: `cargo test <test_name>`
-
-**Run single test file**: Tests are in `src/lib.rs` under the `tests` module
-
-**Check documentation**: `cargo doc --open`
-
 ## Design Constraints
 
 - Closure lifetime binders: On stable Rust, closures can't have lifetime-bound outputs tied to inputs. Use functions instead or nightly's `closure_lifetime_binder` feature.
 - Some `Iterator` methods don't make sense for `LendingIterator` (e.g., `collect`, `peekable`, `last`) because they require multiple items to be accessible simultaneously.
 - The `find()` and `find_map()` methods use unsafe pointer casting (polonius pattern) to work around current borrow checker limitations.
+
+## Important Notes
+
 - Quality is the most important consideration, only commit work you think maintains or improves the quality of the crate
-- Always fmt and clippy before pushing
+- Always test, clippt, and fmt before pushing
+
