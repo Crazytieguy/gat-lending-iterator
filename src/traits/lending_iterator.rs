@@ -711,6 +711,10 @@ pub trait LendingIterator {
     ///
     /// For lending iterators, the accumulator must be an owned type since items borrow from `&mut self`.
     ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by the reducing closure `f`.
+    ///
     /// See [`Iterator::try_reduce`].
     #[inline]
     fn try_reduce<B, F, E>(mut self, f: F) -> Result<Option<B>, E>
@@ -728,21 +732,22 @@ pub trait LendingIterator {
 
     /// Returns the maximum element of an iterator.
     ///
-    /// For lending iterators, this returns an owned value converted from the item,
-    /// as we need to hold onto the maximum value while iterating through borrowed items.
+    /// For lending iterators, items are compared in their borrowed form and only
+    /// converted to the owned type `T` when they become the new maximum, minimizing
+    /// conversions.
     ///
     /// See [`Iterator::max`].
     #[inline]
     fn max<T>(mut self) -> Option<T>
     where
         Self: Sized,
-        T: Ord + for<'a> From<Self::Item<'a>>,
+        T: Clone + for<'a> From<Self::Item<'a>>,
+        for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |max, x| {
-            let x = T::from(x);
-            if x > max {
-                x
+            if max < x {
+                T::from(x)
             } else {
                 max
             }
@@ -751,21 +756,22 @@ pub trait LendingIterator {
 
     /// Returns the minimum element of an iterator.
     ///
-    /// For lending iterators, this returns an owned value converted from the item,
-    /// as we need to hold onto the minimum value while iterating through borrowed items.
+    /// For lending iterators, items are compared in their borrowed form and only
+    /// converted to the owned type `T` when they become the new minimum, minimizing
+    /// conversions.
     ///
     /// See [`Iterator::min`].
     #[inline]
     fn min<T>(mut self) -> Option<T>
     where
         Self: Sized,
-        T: Ord + for<'a> From<Self::Item<'a>>,
+        T: Clone + for<'a> From<Self::Item<'a>>,
+        for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |min, x| {
-            let x = T::from(x);
-            if x < min {
-                x
+            if min > x {
+                T::from(x)
             } else {
                 min
             }
@@ -774,21 +780,21 @@ pub trait LendingIterator {
 
     /// Returns the element that gives the maximum value from the specified function.
     ///
-    /// For lending iterators, this returns an owned value converted from the item.
+    /// For lending iterators, the comparison function operates on borrowed items and owned
+    /// values. Items are only converted to `T` when they become the new maximum.
     ///
     /// See [`Iterator::max_by`].
     #[inline]
     fn max_by<T, F>(mut self, mut compare: F) -> Option<T>
     where
         Self: Sized,
-        F: FnMut(&T, &T) -> Ordering,
-        T: for<'a> From<Self::Item<'a>>,
+        F: for<'a> FnMut(&T, &Self::Item<'a>) -> Ordering,
+        T: Clone + for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |max, x| {
-            let x = T::from(x);
-            match compare(&x, &max) {
-                Ordering::Greater => x,
+            match compare(&max, &x) {
+                Ordering::Less => T::from(x),
                 _ => max,
             }
         }))
@@ -796,21 +802,21 @@ pub trait LendingIterator {
 
     /// Returns the element that gives the minimum value from the specified function.
     ///
-    /// For lending iterators, this returns an owned value converted from the item.
+    /// For lending iterators, the comparison function operates on borrowed items and owned
+    /// values. Items are only converted to `T` when they become the new minimum.
     ///
     /// See [`Iterator::min_by`].
     #[inline]
     fn min_by<T, F>(mut self, mut compare: F) -> Option<T>
     where
         Self: Sized,
-        F: FnMut(&T, &T) -> Ordering,
-        T: for<'a> From<Self::Item<'a>>,
+        F: for<'a> FnMut(&T, &Self::Item<'a>) -> Ordering,
+        T: Clone + for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |min, x| {
-            let x = T::from(x);
-            match compare(&x, &min) {
-                Ordering::Less => x,
+            match compare(&min, &x) {
+                Ordering::Greater => T::from(x),
                 _ => min,
             }
         }))
@@ -819,7 +825,8 @@ pub trait LendingIterator {
     /// Returns the element that gives the maximum value with respect to the
     /// specified key function.
     ///
-    /// For lending iterators, this returns an owned value converted from the item.
+    /// For lending iterators, the key function operates on borrowed items. Items are
+    /// only converted to `T` when they produce a new maximum key.
     ///
     /// See [`Iterator::max_by_key`].
     #[inline]
@@ -827,16 +834,16 @@ pub trait LendingIterator {
     where
         Self: Sized,
         B: Ord,
-        F: FnMut(&T) -> B,
-        T: for<'a> From<Self::Item<'a>>,
+        F: for<'a> FnMut(&Self::Item<'a>) -> B,
+        T: Clone + for<'a> From<Self::Item<'a>>,
     {
-        let first = T::from(self.next()?);
-        let first_key = f(&first);
+        let first_item = self.next()?;
+        let first_key = f(&first_item);
+        let first = T::from(first_item);
         Some(self.fold((first, first_key), |(max, max_key), x| {
-            let x = T::from(x);
             let x_key = f(&x);
             if x_key > max_key {
-                (x, x_key)
+                (T::from(x), x_key)
             } else {
                 (max, max_key)
             }
@@ -846,7 +853,8 @@ pub trait LendingIterator {
     /// Returns the element that gives the minimum value with respect to the
     /// specified key function.
     ///
-    /// For lending iterators, this returns an owned value converted from the item.
+    /// For lending iterators, the key function operates on borrowed items. Items are
+    /// only converted to `T` when they produce a new minimum key.
     ///
     /// See [`Iterator::min_by_key`].
     #[inline]
@@ -854,16 +862,16 @@ pub trait LendingIterator {
     where
         Self: Sized,
         B: Ord,
-        F: FnMut(&T) -> B,
-        T: for<'a> From<Self::Item<'a>>,
+        F: for<'a> FnMut(&Self::Item<'a>) -> B,
+        T: Clone + for<'a> From<Self::Item<'a>>,
     {
-        let first = T::from(self.next()?);
-        let first_key = f(&first);
+        let first_item = self.next()?;
+        let first_key = f(&first_item);
+        let first = T::from(first_item);
         Some(self.fold((first, first_key), |(min, min_key), x| {
-            let x = T::from(x);
             let x_key = f(&x);
             if x_key < min_key {
-                (x, x_key)
+                (T::from(x), x_key)
             } else {
                 (min, min_key)
             }
