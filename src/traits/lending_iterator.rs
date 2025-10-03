@@ -752,7 +752,7 @@ pub trait LendingIterator {
     fn max<T>(mut self) -> Option<T>
     where
         Self: Sized,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
         for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
@@ -776,7 +776,7 @@ pub trait LendingIterator {
     fn min<T>(mut self) -> Option<T>
     where
         Self: Sized,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
         for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
@@ -800,7 +800,7 @@ pub trait LendingIterator {
     where
         Self: Sized,
         F: for<'a> FnMut(&T, &Self::Item<'a>) -> Ordering,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |max, x| {
@@ -822,7 +822,7 @@ pub trait LendingIterator {
     where
         Self: Sized,
         F: for<'a> FnMut(&T, &Self::Item<'a>) -> Ordering,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
         Some(self.fold(first, |min, x| {
@@ -846,7 +846,7 @@ pub trait LendingIterator {
         Self: Sized,
         B: Ord,
         F: for<'a> FnMut(&Self::Item<'a>) -> B,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
     {
         let first_item = self.next()?;
         let first_key = f(&first_item);
@@ -874,7 +874,7 @@ pub trait LendingIterator {
         Self: Sized,
         B: Ord,
         F: for<'a> FnMut(&Self::Item<'a>) -> B,
-        T: Clone + for<'a> From<Self::Item<'a>>,
+        T: for<'a> From<Self::Item<'a>>,
     {
         let first_item = self.next()?;
         let first_key = f(&first_item);
