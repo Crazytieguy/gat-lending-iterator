@@ -324,4 +324,189 @@ mod tests {
             .collect();
         assert_eq!(result, vec![1, 2, 3]);
     }
+
+    #[test]
+    fn reduce_basic() {
+        let result: Option<i32> = (1..=5).into_lending().reduce(|a, b| a + b);
+        assert_eq!(result, Some(15));
+    }
+
+    #[test]
+    fn reduce_empty() {
+        let result: Option<i32> = std::iter::empty::<i32>().into_lending().reduce(|a, b| a + b);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn reduce_single() {
+        let result: Option<i32> = std::iter::once(42).into_lending().reduce(|a, b| a + b);
+        assert_eq!(result, Some(42));
+    }
+
+    #[test]
+    fn try_fold_basic() {
+        let result: Result<i32, &str> = (1..=5).into_lending().try_fold(0, |acc, x| Ok(acc + x));
+        assert_eq!(result, Ok(15));
+    }
+
+    #[test]
+    fn try_fold_early_exit() {
+        let result = (1..=5).into_lending().try_fold(0, |acc, x| {
+            if x == 3 {
+                Err("stopped at 3")
+            } else {
+                Ok(acc + x)
+            }
+        });
+        assert_eq!(result, Err("stopped at 3"));
+    }
+
+    #[test]
+    fn try_for_each_basic() {
+        let mut sum = 0;
+        let result: Result<(), &str> = (1..=5).into_lending().try_for_each(|x| {
+            sum += x;
+            Ok(())
+        });
+        assert_eq!(result, Ok(()));
+        assert_eq!(sum, 15);
+    }
+
+    #[test]
+    fn try_for_each_early_exit() {
+        let mut sum = 0;
+        let result = (1..=5).into_lending().try_for_each(|x| {
+            if x == 3 {
+                Err("stopped")
+            } else {
+                sum += x;
+                Ok(())
+            }
+        });
+        assert_eq!(result, Err("stopped"));
+        assert_eq!(sum, 3);
+    }
+
+    #[test]
+    fn try_find_found() {
+        let mut iter = (0..5).into_lending();
+        let result: Result<Option<i32>, &str> = iter.try_find(|&x| if x == 3 { Ok(true) } else { Ok(false) });
+        assert_eq!(result, Ok(Some(3)));
+    }
+
+    #[test]
+    fn try_find_not_found() {
+        let mut iter = (0..5).into_lending();
+        let result: Result<Option<i32>, &str> = iter.try_find(|&x| Ok(x == 10));
+        assert_eq!(result, Ok(None));
+    }
+
+    #[test]
+    fn try_find_error() {
+        let mut iter = (0..5).into_lending();
+        let result: Result<Option<i32>, &str> = iter.try_find(|&x| if x == 2 { Err("error") } else { Ok(false) });
+        assert_eq!(result, Err("error"));
+    }
+
+    #[test]
+    fn try_reduce_basic() {
+        let result: Result<Option<i32>, &str> = (1..=5).into_lending().try_reduce(|a, b| Ok(a + b));
+        assert_eq!(result, Ok(Some(15)));
+    }
+
+    #[test]
+    fn try_reduce_empty() {
+        let result: Result<Option<i32>, &str> = std::iter::empty::<i32>().into_lending().try_reduce(|a, b| Ok(a + b));
+        assert_eq!(result, Ok(None));
+    }
+
+    #[test]
+    fn try_reduce_error() {
+        let result: Result<Option<i32>, &str> = (1..=5).into_lending().try_reduce(|a, b| {
+            if b == 3 {
+                Err("error at 3")
+            } else {
+                Ok(a + b)
+            }
+        });
+        assert_eq!(result, Err("error at 3"));
+    }
+
+    #[test]
+    fn max_basic() {
+        let max: i32 = (1..=5).into_lending().max().unwrap();
+        assert_eq!(max, 5);
+    }
+
+    #[test]
+    fn max_empty() {
+        let max: Option<i32> = std::iter::empty::<i32>().into_lending().max();
+        assert_eq!(max, None);
+    }
+
+    #[test]
+    fn max_single() {
+        let max: i32 = std::iter::once(42).into_lending().max().unwrap();
+        assert_eq!(max, 42);
+    }
+
+    #[test]
+    fn min_basic() {
+        let min: i32 = (1..=5).into_lending().min().unwrap();
+        assert_eq!(min, 1);
+    }
+
+    #[test]
+    fn min_empty() {
+        let min: Option<i32> = std::iter::empty::<i32>().into_lending().min();
+        assert_eq!(min, None);
+    }
+
+    #[test]
+    fn max_by_basic() {
+        let max: i32 = (1..=5).into_lending().max_by(|a: &i32, b: &i32| a.cmp(b)).unwrap();
+        assert_eq!(max, 5);
+    }
+
+    #[test]
+    fn min_by_basic() {
+        let min: i32 = (1..=5).into_lending().min_by(|a: &i32, b: &i32| a.cmp(b)).unwrap();
+        assert_eq!(min, 1);
+    }
+
+    #[test]
+    fn max_by_key_basic() {
+        let max: i32 = vec![1, 5, 3, 2, 4].into_lending().max_by_key(|x| *x).unwrap();
+        assert_eq!(max, 5);
+    }
+
+    #[test]
+    fn min_by_key_basic() {
+        let min: i32 = vec![3, 1, 4, 5, 2].into_lending().min_by_key(|x| *x).unwrap();
+        assert_eq!(min, 1);
+    }
+
+    #[test]
+    fn sum_basic() {
+        let sum: i32 = (1..=5).into_lending().sum();
+        assert_eq!(sum, 15);
+    }
+
+    #[test]
+    fn sum_empty() {
+        let sum: i32 = std::iter::empty::<i32>().into_lending().sum();
+        assert_eq!(sum, 0);
+    }
+
+    #[test]
+    fn product_basic() {
+        let product: i32 = (1..=5).into_lending().product();
+        assert_eq!(product, 120);
+    }
+
+    #[test]
+    fn product_empty() {
+        let product: i32 = std::iter::empty::<i32>().into_lending().product();
+        assert_eq!(product, 1);
+    }
 }

@@ -892,9 +892,14 @@ pub trait LendingIterator {
 
     /// Iterates over the entire iterator, multiplying all the elements
     ///
-    /// An empty iterator returns the one value of the type.
+    /// An empty iterator returns the multiplicative identity (1).
     ///
-    /// For lending iterators, items must be multiplicable with the product type.
+    /// Unlike [`Iterator::product`], this works directly with borrowed items by requiring
+    /// the product type to implement `MulAssign` for the borrowed item type.
+    ///
+    /// Note: Requires `From<u8>` to create the identity value (1). This works for all
+    /// standard numeric types. For types without this conversion, consider using
+    /// [`fold`](Self::fold) or [`reduce`](Self::reduce) instead.
     ///
     /// See [`Iterator::product`].
     #[inline]

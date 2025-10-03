@@ -34,6 +34,21 @@ where
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next().map(|item| *item.deref())
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    #[inline]
+    fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
+        self.iter.nth(n).map(|item| *item.deref())
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.iter.count()
+    }
 }
 
 pub struct IntoIter<I> {
