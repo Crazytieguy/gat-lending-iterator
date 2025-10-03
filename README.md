@@ -1,12 +1,31 @@
 # Gat Lending Iterator
 
-My concept for what a lending iterator crate should look like. **Work in progress**.
+A library for lending iterators using Generic Associated Types (GATs). Lending iterators allow items to borrow from `&mut self`, enabling patterns like iterating over windows of elements with references.
+
+[![Crates.io](https://img.shields.io/crates/v/gat-lending-iterator.svg)](https://crates.io/crates/gat-lending-iterator)
+[![Documentation](https://docs.rs/gat-lending-iterator/badge.svg)](https://docs.rs/gat-lending-iterator)
+
+## Example
+
+```rust
+use gat_lending_iterator::{LendingIterator, ToLendingIterator};
+
+// Iterate over overlapping windows
+let result: Vec<Vec<i32>> = (0..5)
+    .windows(3)
+    .map(|w| w.to_vec())
+    .into_iter()
+    .collect();
+assert_eq!(result, vec![vec![0, 1, 2], vec![1, 2, 3], vec![2, 3, 4]]);
+```
+
+## Features
 
 Most `Iterator` methods can work as is on `LendingIterator`s, but some wouldn't make sense. Basically any method that needs to look at more than one element at once isn't possible.
 
-Some `LendingIterator` methods _may_ return something that can act as an `Iterator`. For example `cloned`, or `map`, when the function passed to it returns a value that isn't tied to the lifetime of its input. In these cases, my design choice was to conditionally implement IntoIterator for the adapter.
+Some `LendingIterator` methods _may_ return something that can act as an `Iterator`. For example `cloned`, or `map`, when the function passed to it returns a value that isn't tied to the lifetime of its input. In these cases, the design choice was to conditionally implement `IntoIterator` for the adapter.
 
-I've also included an extension trait `ToLendingIterator: IntoIterator` for iterators that allows turning them into lending iterators in various ways, for example over windows of elements. It's possible I will add more methods to this trait.
+The crate also includes an extension trait `ToLendingIterator: IntoIterator` for iterators that allows turning them into lending iterators in various ways, for example over windows of elements.
 
 ## methods that behave the same on `LendingIterator`s as they do on `Iterator`s
 
