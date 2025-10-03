@@ -457,7 +457,7 @@ pub trait LendingIterator {
         loop {
             match (self.next(), other.next()) {
                 (Some(x), Some(y)) => match x.cmp(&y) {
-                    Ordering::Equal => continue,
+                    Ordering::Equal => {}
                     non_eq => return non_eq,
                 },
                 (None, None) => return Ordering::Equal,
@@ -478,7 +478,7 @@ pub trait LendingIterator {
         loop {
             match (self.next(), other.next()) {
                 (Some(x), Some(y)) => match cmp(x, y) {
-                    Ordering::Equal => continue,
+                    Ordering::Equal => {}
                     non_eq => return non_eq,
                 },
                 (None, None) => return Ordering::Equal,
@@ -501,7 +501,7 @@ pub trait LendingIterator {
         loop {
             match (self.next(), other.next()) {
                 (Some(x), Some(y)) => match x.partial_cmp(&y) {
-                    Some(Ordering::Equal) => continue,
+                    Some(Ordering::Equal) => {}
                     non_eq => return non_eq,
                 },
                 (None, None) => return Some(Ordering::Equal),
@@ -522,7 +522,7 @@ pub trait LendingIterator {
         loop {
             match (self.next(), other.next()) {
                 (Some(x), Some(y)) => match partial_cmp(x, y) {
-                    Some(Ordering::Equal) => continue,
+                    Some(Ordering::Equal) => {}
                     non_eq => return non_eq,
                 },
                 (None, None) => return Some(Ordering::Equal),
@@ -652,6 +652,10 @@ pub trait LendingIterator {
     ///
     /// After an error is returned, the iterator may be in an unspecified state.
     ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by the closure `f`.
+    ///
     /// See [`Iterator::try_fold`].
     #[inline]
     fn try_fold<B, F, E>(&mut self, init: B, mut f: F) -> Result<B, E>
@@ -669,6 +673,10 @@ pub trait LendingIterator {
     /// An iterator method that applies a fallible function to each item in the
     /// iterator, stopping at the first error and returning that error.
     ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by the closure `f`.
+    ///
     /// See [`Iterator::try_for_each`].
     #[inline]
     fn try_for_each<F, E>(&mut self, mut f: F) -> Result<(), E>
@@ -685,6 +693,10 @@ pub trait LendingIterator {
     /// Applies function to the elements of iterator and returns
     /// the first true result or the first error.
     ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by the predicate `f`.
+    ///
     /// See [`Iterator::try_find`].
     #[inline]
     fn try_find<F, R>(&mut self, mut f: F) -> Result<Option<Self::Item<'_>>, R>
@@ -700,9 +712,8 @@ pub trait LendingIterator {
                     Ok(false) => continue,
                     Err(e) => return Err(e),
                 }
-            } else {
-                return Ok(None);
             }
+            return Ok(None);
         }
     }
 
