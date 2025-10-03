@@ -1,6 +1,6 @@
 # Gat Lending Iterator
 
-A library for lending iterators using Generic Associated Types (GATs). Lending iterators allow items to borrow from `&mut self`, enabling patterns like iterating over windows of elements with references.
+A library for lending iterators using Generic Associated Types (GATs). Lending iterators allow items to borrow from `&mut self`, enabling patterns like iterating over windows of elements with references. **Work in progress**.
 
 [![Crates.io](https://img.shields.io/crates/v/gat-lending-iterator.svg)](https://crates.io/crates/gat-lending-iterator)
 [![Documentation](https://docs.rs/gat-lending-iterator/badge.svg)](https://docs.rs/gat-lending-iterator)
