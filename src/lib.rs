@@ -550,4 +550,145 @@ mod tests {
         let product: i32 = std::iter::empty::<i32>().into_lending().product();
         assert_eq!(product, 1);
     }
+
+    #[test]
+    fn max_with_windows() {
+        let max: Vec<i32> = (0..5)
+            .windows(2)
+            .max_by(|a: &Vec<i32>, b| {
+                if a[0] == b[0] {
+                    a[1].cmp(&b[1])
+                } else {
+                    a[0].cmp(&b[0])
+                }
+            })
+            .unwrap();
+        assert_eq!(max, vec![3, 4]);
+    }
+
+    #[test]
+    fn min_with_windows() {
+        let min: Vec<i32> = (0..5)
+            .windows(2)
+            .min_by(|a: &Vec<i32>, b| {
+                if a[0] == b[0] {
+                    a[1].cmp(&b[1])
+                } else {
+                    a[0].cmp(&b[0])
+                }
+            })
+            .unwrap();
+        assert_eq!(min, vec![0, 1]);
+    }
+
+    #[test]
+    fn max_by_with_windows() {
+        let max: Vec<i32> = (0..5)
+            .windows(2)
+            .max_by(|a: &Vec<i32>, b| a[0].cmp(&b[0]))
+            .unwrap();
+        assert_eq!(max, vec![3, 4]);
+    }
+
+    #[test]
+    fn max_by_key_with_windows() {
+        let max: Vec<i32> = (0..5).windows(2).max_by_key(|w| w[0] + w[1]).unwrap();
+        assert_eq!(max, vec![3, 4]);
+    }
+
+    #[test]
+    fn reduce_with_windows() {
+        let sum: Vec<i32> = (0..5)
+            .windows(2)
+            .reduce(|mut acc: Vec<i32>, w| {
+                acc[0] += w[0];
+                acc[1] += w[1];
+                acc
+            })
+            .unwrap();
+        assert_eq!(sum, vec![6, 10]);
+    }
+
+    #[test]
+    fn try_fold_with_windows() {
+        let result: Result<i32, &str> = (0..5)
+            .windows(2)
+            .try_fold(0, |acc, w| Ok(acc + w[0] + w[1]));
+        assert_eq!(result, Ok(16));
+    }
+
+    #[test]
+    fn try_reduce_with_windows() {
+        let result: Result<Option<Vec<i32>>, &str> =
+            (0..5).windows(2).try_reduce(|mut acc: Vec<i32>, w| {
+                acc[0] += w[0];
+                acc[1] += w[1];
+                Ok(acc)
+            });
+        assert_eq!(result, Ok(Some(vec![6, 10])));
+    }
+
+    #[test]
+    fn inspect_with_windows() {
+        use std::cell::Cell;
+        use std::rc::Rc;
+        let sum = Rc::new(Cell::new(0));
+        let sum_clone = sum.clone();
+        let _: Vec<_> = (0..4)
+            .windows(2)
+            .inspect(move |w| sum_clone.set(sum_clone.get() + w[0] + w[1]))
+            .map(to_vec_i32)
+            .into_iter()
+            .collect();
+        assert_eq!(sum.get(), 9);
+    }
+
+    #[test]
+    fn scan_with_windows() {
+        let mut result = Vec::new();
+        (0..4)
+            .windows(2)
+            .scan(0i32, |state: &mut i32, w: &[i32]| {
+                *state += w[0];
+                Some(*state)
+            })
+            .for_each(|x| result.push(x));
+        assert_eq!(result, vec![0, 1, 3]);
+    }
+
+    #[test]
+    fn fuse_with_windows() {
+        let mut iter = (0..3).windows(2).fuse();
+        assert_eq!(iter.next(), Some(&[0, 1][..]));
+        assert_eq!(iter.next(), Some(&[1, 2][..]));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn map_while_with_windows() {
+        let mut result = Vec::new();
+        (0..5)
+            .windows(2)
+            .map_while(|w: &[i32]| if w[0] < 2 { Some(w[0] + w[1]) } else { None })
+            .for_each(|x| result.push(x));
+        assert_eq!(result, vec![1, 3]);
+    }
+
+    #[test]
+    fn cycle_with_lending() {
+        let mut iter = (0..3).into_lending().cycle();
+        assert_eq!(iter.next(), Some(0));
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), Some(0));
+        assert_eq!(iter.next(), Some(1));
+    }
+
+    #[test]
+    fn copied_with_refs() {
+        let data = vec![1, 2, 3, 4];
+        let result: Vec<_> = data.lend_refs().copied().into_iter().collect();
+        assert_eq!(result, vec![1, 2, 3, 4]);
+    }
 }

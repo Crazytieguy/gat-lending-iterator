@@ -46,11 +46,7 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
-            // SAFETY: The polonius pattern is needed because self.iter.next() returns
-            // an item that borrows from self, which would prevent us from modifying
-            // self.iter later. By using unsafe, we tell the compiler that we know
-            // the returned item doesn't overlap with the modification to self.iter.
-            // This is sound because we only reset self.iter when it returns None.
+            // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
             let self_ = unsafe { &mut *(self as *mut Self) };
             match self_.iter.next() {
                 None => {

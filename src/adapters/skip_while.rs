@@ -22,7 +22,7 @@ impl<I, P> SkipWhile<I, P> {
 
 impl<I: fmt::Debug, P> fmt::Debug for SkipWhile<I, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TakeWhile")
+        f.debug_struct("SkipWhile")
             .field("iter", &self.iter)
             .field("flag", &self.flag)
             .finish_non_exhaustive()

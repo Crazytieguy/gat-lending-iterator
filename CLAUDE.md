@@ -45,3 +45,4 @@ This is a Rust library implementing a lending iterator trait using Generic Assoc
 - Some `Iterator` methods don't make sense for `LendingIterator` (e.g., `collect`, `peekable`, `last`) because they require multiple items to be accessible simultaneously.
 - The `find()` and `find_map()` methods use unsafe pointer casting (polonius pattern) to work around current borrow checker limitations.
 - Quality is the most important consideration, only commit work you think maintains or improves the quality of the crate
+- Always fmt and clippy before pushing
