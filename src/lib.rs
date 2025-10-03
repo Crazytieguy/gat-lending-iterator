@@ -179,12 +179,16 @@ mod tests {
 
     #[test]
     fn is_partitioned_true() {
-        assert!(vec![2, 4, 6, 1, 3, 5].into_lending().is_partitioned(|x| x % 2 == 0));
+        assert!(vec![2, 4, 6, 1, 3, 5]
+            .into_lending()
+            .is_partitioned(|x| x % 2 == 0));
     }
 
     #[test]
     fn is_partitioned_false() {
-        assert!(!vec![2, 1, 4, 3].into_lending().is_partitioned(|x| x % 2 == 0));
+        assert!(!vec![2, 1, 4, 3]
+            .into_lending()
+            .is_partitioned(|x| x % 2 == 0));
     }
 
     #[test]
@@ -249,25 +253,33 @@ mod tests {
     #[test]
     fn cmp_by_basic() {
         use std::cmp::Ordering;
-        let result = (0i32..3).into_lending().cmp_by((0i32..3).into_lending(), |a, b| a.cmp(&b));
+        let result = (0i32..3)
+            .into_lending()
+            .cmp_by((0i32..3).into_lending(), |a, b| a.cmp(&b));
         assert_eq!(result, Ordering::Equal);
     }
 
     #[test]
     fn partial_cmp_by_basic() {
         use std::cmp::Ordering;
-        let result = (0i32..3).into_lending().partial_cmp_by((0i32..3).into_lending(), |a, b| a.partial_cmp(&b));
+        let result = (0i32..3)
+            .into_lending()
+            .partial_cmp_by((0i32..3).into_lending(), |a, b| a.partial_cmp(&b));
         assert_eq!(result, Some(Ordering::Equal));
     }
 
     #[test]
     fn eq_by_basic() {
-        assert!((0i32..3).into_lending().eq_by((0i32..3).into_lending(), |a, b| a == b));
+        assert!((0i32..3)
+            .into_lending()
+            .eq_by((0i32..3).into_lending(), |a, b| a == b));
     }
 
     #[test]
     fn eq_by_false() {
-        assert!(!(0i32..3).into_lending().eq_by((1i32..4).into_lending(), |a, b| a == b));
+        assert!(!(0i32..3)
+            .into_lending()
+            .eq_by((1i32..4).into_lending(), |a, b| a == b));
     }
 
     #[test]
@@ -289,10 +301,18 @@ mod tests {
             .map(to_vec_i32)
             .into_iter()
             .collect();
-        assert_eq!(result, vec![
-            vec![0, 1, 2], vec![2, 3, 4],
-            vec![0, 1], vec![1, 2], vec![2, 3], vec![3, 4], vec![4, 5]
-        ]);
+        assert_eq!(
+            result,
+            vec![
+                vec![0, 1, 2],
+                vec![2, 3, 4],
+                vec![0, 1],
+                vec![1, 2],
+                vec![2, 3],
+                vec![3, 4],
+                vec![4, 5]
+            ]
+        );
     }
 
     fn accumulate_window_usize(slice: &mut [usize]) -> usize {
@@ -333,7 +353,9 @@ mod tests {
 
     #[test]
     fn reduce_empty() {
-        let result: Option<i32> = std::iter::empty::<i32>().into_lending().reduce(|a, b| a + b);
+        let result: Option<i32> = std::iter::empty::<i32>()
+            .into_lending()
+            .reduce(|a, b| a + b);
         assert_eq!(result, None);
     }
 
@@ -390,7 +412,8 @@ mod tests {
     #[test]
     fn try_find_found() {
         let mut iter = (0..5).into_lending();
-        let result: Result<Option<i32>, &str> = iter.try_find(|&x| if x == 3 { Ok(true) } else { Ok(false) });
+        let result: Result<Option<i32>, &str> =
+            iter.try_find(|&x| if x == 3 { Ok(true) } else { Ok(false) });
         assert_eq!(result, Ok(Some(3)));
     }
 
@@ -404,7 +427,8 @@ mod tests {
     #[test]
     fn try_find_error() {
         let mut iter = (0..5).into_lending();
-        let result: Result<Option<i32>, &str> = iter.try_find(|&x| if x == 2 { Err("error") } else { Ok(false) });
+        let result: Result<Option<i32>, &str> =
+            iter.try_find(|&x| if x == 2 { Err("error") } else { Ok(false) });
         assert_eq!(result, Err("error"));
     }
 
@@ -416,19 +440,24 @@ mod tests {
 
     #[test]
     fn try_reduce_empty() {
-        let result: Result<Option<i32>, &str> = std::iter::empty::<i32>().into_lending().try_reduce(|a, b| Ok(a + b));
+        let result: Result<Option<i32>, &str> = std::iter::empty::<i32>()
+            .into_lending()
+            .try_reduce(|a, b| Ok(a + b));
         assert_eq!(result, Ok(None));
     }
 
     #[test]
     fn try_reduce_error() {
-        let result: Result<Option<i32>, &str> = (1..=5).into_lending().try_reduce(|a, b| {
-            if b == 3 {
-                Err("error at 3")
-            } else {
-                Ok(a + b)
-            }
-        });
+        let result: Result<Option<i32>, &str> =
+            (1..=5).into_lending().try_reduce(
+                |a, b| {
+                    if b == 3 {
+                        Err("error at 3")
+                    } else {
+                        Ok(a + b)
+                    }
+                },
+            );
         assert_eq!(result, Err("error at 3"));
     }
 
@@ -464,25 +493,37 @@ mod tests {
 
     #[test]
     fn max_by_basic() {
-        let max: i32 = (1..=5).into_lending().max_by(|a: &i32, b: &i32| a.cmp(b)).unwrap();
+        let max: i32 = (1..=5)
+            .into_lending()
+            .max_by(|a: &i32, b: &i32| a.cmp(b))
+            .unwrap();
         assert_eq!(max, 5);
     }
 
     #[test]
     fn min_by_basic() {
-        let min: i32 = (1..=5).into_lending().min_by(|a: &i32, b: &i32| a.cmp(b)).unwrap();
+        let min: i32 = (1..=5)
+            .into_lending()
+            .min_by(|a: &i32, b: &i32| a.cmp(b))
+            .unwrap();
         assert_eq!(min, 1);
     }
 
     #[test]
     fn max_by_key_basic() {
-        let max: i32 = vec![1, 5, 3, 2, 4].into_lending().max_by_key(|x| *x).unwrap();
+        let max: i32 = vec![1, 5, 3, 2, 4]
+            .into_lending()
+            .max_by_key(|x| *x)
+            .unwrap();
         assert_eq!(max, 5);
     }
 
     #[test]
     fn min_by_key_basic() {
-        let min: i32 = vec![3, 1, 4, 5, 2].into_lending().min_by_key(|x| *x).unwrap();
+        let min: i32 = vec![3, 1, 4, 5, 2]
+            .into_lending()
+            .min_by_key(|x| *x)
+            .unwrap();
         assert_eq!(min, 1);
     }
 

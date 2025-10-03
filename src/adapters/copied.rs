@@ -27,7 +27,8 @@ where
     for<'a> I::Item<'a>: Deref,
     for<'a> <I::Item<'a> as Deref>::Target: Copy,
 {
-    type Item<'a> = <I::Item<'a> as Deref>::Target
+    type Item<'a>
+        = <I::Item<'a> as Deref>::Target
     where
         Self: 'a;
 
@@ -89,11 +90,7 @@ mod tests {
     #[test]
     fn copied_basic() {
         let data = vec![1, 2, 3];
-        let result: Vec<_> = data
-            .lend_refs()
-            .copied()
-            .into_iter()
-            .collect();
+        let result: Vec<_> = data.lend_refs().copied().into_iter().collect();
         assert_eq!(result, vec![1, 2, 3]);
     }
 }

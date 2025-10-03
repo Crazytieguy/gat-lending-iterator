@@ -2,7 +2,9 @@ use core::cmp::Ordering;
 use std::{num::NonZeroUsize, ops::Deref};
 
 use crate::{
-    Chain, Cloned, Copied, Cycle, Enumerate, Filter, FilterMap, Fuse, Inspect, Map, MapWhile, OptionTrait, Scan, SingleArgFnMut, SingleArgFnOnce, Skip, SkipWhile, StepBy, Take, TakeWhile, Zip
+    Chain, Cloned, Copied, Cycle, Enumerate, Filter, FilterMap, Fuse, Inspect, Map, MapWhile,
+    OptionTrait, Scan, SingleArgFnMut, SingleArgFnOnce, Skip, SkipWhile, StepBy, Take, TakeWhile,
+    Zip,
 };
 
 /// Like [`Iterator`], but items may borrow from `&mut self`.
@@ -300,9 +302,8 @@ pub trait LendingIterator {
         MapWhile::new(self, f)
     }
 
-    /// Creates a lending iterator which can use the [`peek`] method
-    /// to look at the next element without consuming it. Returns `None`
-    /// when iteration is finished.
+    /// Creates a lending iterator that yields `None` forever after the
+    /// underlying iterator yields `None` once.
     ///
     /// See [`Iterator::fuse`].
     #[inline]
@@ -325,10 +326,10 @@ pub trait LendingIterator {
     }
 
     /// Borrows the lending iterator.
-    /// 
+    ///
     /// This is useful to allow applying iterator adapters while still
     /// retaining ownership of the original iterator.
-    /// 
+    ///
     /// Unfortunately adapters that take in a closure are currently
     /// incompatible with this, due to limitations in the borrow checker.
     #[inline]
@@ -378,12 +379,12 @@ pub trait LendingIterator {
     {
         while let Some(item) = self.next() {
             if !predicate(item) {
-                break
+                break;
             }
         }
         while let Some(item) = self.next() {
             if predicate(item) {
-                return false
+                return false;
             }
         }
         true
@@ -542,9 +543,11 @@ pub trait LendingIterator {
     {
         loop {
             match (self.next(), other.next()) {
-                (Some(x), Some(y)) => if x != y {
-                    return false;
-                },
+                (Some(x), Some(y)) => {
+                    if x != y {
+                        return false;
+                    }
+                }
                 (None, None) => return true,
                 _ => return false,
             }
@@ -561,9 +564,11 @@ pub trait LendingIterator {
     {
         loop {
             match (self.next(), other.next()) {
-                (Some(x), Some(y)) => if !eq(x, y) {
-                    return false;
-                },
+                (Some(x), Some(y)) => {
+                    if !eq(x, y) {
+                        return false;
+                    }
+                }
                 (None, None) => return true,
                 _ => return false,
             }
@@ -600,7 +605,10 @@ pub trait LendingIterator {
         for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
         Self: Sized,
     {
-        matches!(self.partial_cmp(other), Some(Ordering::Less | Ordering::Equal))
+        matches!(
+            self.partial_cmp(other),
+            Some(Ordering::Less | Ordering::Equal)
+        )
     }
 
     /// Determines if the elements of this [`Iterator`] are [lexicographically](Ord#lexicographical-comparison)
@@ -622,7 +630,10 @@ pub trait LendingIterator {
         for<'a> Self::Item<'a>: PartialOrd<I::Item<'a>>,
         Self: Sized,
     {
-        matches!(self.partial_cmp(other), Some(Ordering::Greater | Ordering::Equal))
+        matches!(
+            self.partial_cmp(other),
+            Some(Ordering::Greater | Ordering::Equal)
+        )
     }
 
     /// Reduces the elements to a single one, by repeatedly applying a reducing
@@ -705,6 +716,7 @@ pub trait LendingIterator {
         F: FnMut(&Self::Item<'_>) -> Result<bool, R>,
     {
         loop {
+            // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
             let self_ = unsafe { &mut *(self as *mut Self) };
             if let Some(item) = self_.next() {
                 match f(&item) {
@@ -756,13 +768,7 @@ pub trait LendingIterator {
         for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
-        Some(self.fold(first, |max, x| {
-            if max < x {
-                T::from(x)
-            } else {
-                max
-            }
-        }))
+        Some(self.fold(first, |max, x| if max < x { T::from(x) } else { max }))
     }
 
     /// Returns the minimum element of an iterator.
@@ -780,13 +786,7 @@ pub trait LendingIterator {
         for<'a> T: PartialOrd<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
-        Some(self.fold(first, |min, x| {
-            if min > x {
-                T::from(x)
-            } else {
-                min
-            }
-        }))
+        Some(self.fold(first, |min, x| if min > x { T::from(x) } else { min }))
     }
 
     /// Returns the element that gives the maximum value from the specified function.
@@ -803,11 +803,9 @@ pub trait LendingIterator {
         T: for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
-        Some(self.fold(first, |max, x| {
-            match compare(&max, &x) {
-                Ordering::Less => T::from(x),
-                _ => max,
-            }
+        Some(self.fold(first, |max, x| match compare(&max, &x) {
+            Ordering::Less => T::from(x),
+            _ => max,
         }))
     }
 
@@ -825,11 +823,9 @@ pub trait LendingIterator {
         T: for<'a> From<Self::Item<'a>>,
     {
         let first = T::from(self.next()?);
-        Some(self.fold(first, |min, x| {
-            match compare(&min, &x) {
-                Ordering::Greater => T::from(x),
-                _ => min,
-            }
+        Some(self.fold(first, |min, x| match compare(&min, &x) {
+            Ordering::Greater => T::from(x),
+            _ => min,
         }))
     }
 
@@ -851,14 +847,17 @@ pub trait LendingIterator {
         let first_item = self.next()?;
         let first_key = f(&first_item);
         let first = T::from(first_item);
-        Some(self.fold((first, first_key), |(max, max_key), x| {
-            let x_key = f(&x);
-            if x_key > max_key {
-                (T::from(x), x_key)
-            } else {
-                (max, max_key)
-            }
-        }).0)
+        Some(
+            self.fold((first, first_key), |(max, max_key), x| {
+                let x_key = f(&x);
+                if x_key > max_key {
+                    (T::from(x), x_key)
+                } else {
+                    (max, max_key)
+                }
+            })
+            .0,
+        )
     }
 
     /// Returns the element that gives the minimum value with respect to the
@@ -879,14 +878,17 @@ pub trait LendingIterator {
         let first_item = self.next()?;
         let first_key = f(&first_item);
         let first = T::from(first_item);
-        Some(self.fold((first, first_key), |(min, min_key), x| {
-            let x_key = f(&x);
-            if x_key < min_key {
-                (T::from(x), x_key)
-            } else {
-                (min, min_key)
-            }
-        }).0)
+        Some(
+            self.fold((first, first_key), |(min, min_key), x| {
+                let x_key = f(&x);
+                if x_key < min_key {
+                    (T::from(x), x_key)
+                } else {
+                    (min, min_key)
+                }
+            })
+            .0,
+        )
     }
 
     /// Sums the elements of an iterator.
@@ -935,7 +937,10 @@ pub trait LendingIterator {
 }
 
 impl<T: LendingIterator> LendingIterator for &mut T {
-    type Item<'a> = T::Item<'a> where Self: 'a;
+    type Item<'a>
+        = T::Item<'a>
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {

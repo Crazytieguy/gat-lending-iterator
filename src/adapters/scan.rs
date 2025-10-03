@@ -36,7 +36,8 @@ where
     I: LendingIterator,
     F: for<'a> FnMut(&'a mut St, I::Item<'a>) -> Option<B>,
 {
-    type Item<'a> = B
+    type Item<'a>
+        = B
     where
         Self: 'a;
 

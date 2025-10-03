@@ -38,7 +38,8 @@ impl<I> LendingIterator for Cycle<I>
 where
     I: Clone + LendingIterator,
 {
-    type Item<'a> = I::Item<'a>
+    type Item<'a>
+        = I::Item<'a>
     where
         Self: 'a;
 

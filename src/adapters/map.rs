@@ -23,7 +23,9 @@ impl<I, F> Map<I, F> {
 
 impl<I: fmt::Debug, F> fmt::Debug for Map<I, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Map").field("iter", &self.iter).finish_non_exhaustive()
+        f.debug_struct("Map")
+            .field("iter", &self.iter)
+            .finish_non_exhaustive()
     }
 }
 
@@ -32,9 +34,10 @@ where
     I: LendingIterator,
     F: for<'a> SingleArgFnMut<I::Item<'a>>,
 {
-    type Item<'a> = <F as SingleArgFnOnce<I::Item<'a>>>::Output
-        where
-            Self: 'a;
+    type Item<'a>
+        = <F as SingleArgFnOnce<I::Item<'a>>>::Output
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -92,11 +95,7 @@ mod tests {
 
     #[test]
     fn map_basic() {
-        let result: Vec<_> = (0..3)
-            .into_lending()
-            .map(double)
-            .into_iter()
-            .collect();
+        let result: Vec<_> = (0..3).into_lending().map(double).into_iter().collect();
         assert_eq!(result, vec![0, 2, 4]);
     }
 

@@ -35,7 +35,8 @@ where
     F: for<'a> SingleArgFnMut<I::Item<'a>>,
     for<'a> <F as SingleArgFnOnce<I::Item<'a>>>::Output: OptionTrait,
 {
-    type Item<'a> = <<F as SingleArgFnOnce<I::Item<'a>>>::Output as OptionTrait>::Item
+    type Item<'a>
+        = <<F as SingleArgFnOnce<I::Item<'a>>>::Output as OptionTrait>::Item
     where
         Self: 'a;
 

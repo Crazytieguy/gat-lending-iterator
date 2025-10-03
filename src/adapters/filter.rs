@@ -23,7 +23,9 @@ impl<I, P> Filter<I, P> {
 
 impl<I: fmt::Debug, P> fmt::Debug for Filter<I, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Filter").field("iter", &self.iter).finish_non_exhaustive()
+        f.debug_struct("Filter")
+            .field("iter", &self.iter)
+            .finish_non_exhaustive()
     }
 }
 
@@ -32,7 +34,8 @@ where
     I: LendingIterator,
     P: for<'a> FnMut(&I::Item<'a>) -> bool,
 {
-    type Item<'a> = I::Item<'a>
+    type Item<'a>
+        = I::Item<'a>
     where
         Self: 'a;
 

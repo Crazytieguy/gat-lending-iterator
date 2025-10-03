@@ -23,9 +23,7 @@ impl<I> Fuse<I> {
 
 impl<I: fmt::Debug> fmt::Debug for Fuse<I> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Fuse")
-            .field("iter", &self.iter)
-            .finish()
+        f.debug_struct("Fuse").field("iter", &self.iter).finish()
     }
 }
 
@@ -33,7 +31,8 @@ impl<I> LendingIterator for Fuse<I>
 where
     I: LendingIterator,
 {
-    type Item<'a> = I::Item<'a>
+    type Item<'a>
+        = I::Item<'a>
     where
         Self: 'a;
 
@@ -74,16 +73,17 @@ mod tests {
     }
 
     impl LendingIterator for OneThenError {
-        type Item<'a> = i32
+        type Item<'a>
+            = i32
         where
             Self: 'a;
 
         fn next(&mut self) -> Option<Self::Item<'_>> {
-            if !self.yielded {
+            if self.yielded {
+                None
+            } else {
                 self.yielded = true;
                 Some(1)
-            } else {
-                None
             }
         }
     }

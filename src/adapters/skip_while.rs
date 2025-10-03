@@ -34,12 +34,15 @@ where
     I: LendingIterator,
     P: for<'a> FnMut(&I::Item<'a>) -> bool,
 {
-    type Item<'a> = I::Item<'a> where Self: 'a;
+    type Item<'a>
+        = I::Item<'a>
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.flag {
-            return self.iter.next()
+            return self.iter.next();
         }
         loop {
             // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
