@@ -18,7 +18,10 @@ impl<I> LendingIterator for LendRefs<I>
 where
     I: Iterator,
 {
-    type Item<'a> = &'a I::Item where Self: 'a;
+    type Item<'a>
+        = &'a I::Item
+    where
+        Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.item = self.iter.next();
@@ -34,7 +37,10 @@ mod test {
         x: Foo,
     }
     impl LendingIterator for W {
-        type Item<'a> = &'a Foo where Self: 'a;
+        type Item<'a>
+            = &'a Foo
+        where
+            Self: 'a;
         fn next(&mut self) -> Option<Self::Item<'_>> {
             self.x.0 += 1;
             Some(&self.x)
@@ -54,6 +60,7 @@ mod test {
         std::iter::once(Foo(0)).lend_refs().chain(w)
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn double_ref_i32(x: &i32) -> i32 {
         x * 2
     }

@@ -31,10 +31,10 @@ impl<I> LendingIterator for StepBy<I>
 where
     I: LendingIterator,
 {
-    type Item<'a> = I::Item<'a>
-        where
-            Self: 'a
-    ;
+    type Item<'a>
+        = I::Item<'a>
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {

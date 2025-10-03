@@ -18,7 +18,10 @@ impl<I> LendingIterator for Skip<I>
 where
     I: LendingIterator,
 {
-    type Item<'a> = I::Item<'a> where I: 'a;
+    type Item<'a>
+        = I::Item<'a>
+    where
+        I: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<I::Item<'_>> {

@@ -24,10 +24,11 @@ where
     A: LendingIterator,
     B: LendingIterator,
 {
-    type Item<'a> = (A::Item<'a>, B::Item<'a>)
-        where
-            A: 'a, B: 'a
-    ;
+    type Item<'a>
+        = (A::Item<'a>, B::Item<'a>)
+    where
+        A: 'a,
+        B: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {

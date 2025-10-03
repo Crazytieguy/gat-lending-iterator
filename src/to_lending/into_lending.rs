@@ -13,7 +13,10 @@ impl<I: Iterator> IntoLending<I> {
 }
 
 impl<I: Iterator> LendingIterator for IntoLending<I> {
-    type Item<'a> = I::Item where Self: 'a;
+    type Item<'a>
+        = I::Item
+    where
+        Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next()

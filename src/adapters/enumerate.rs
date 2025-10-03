@@ -15,7 +15,10 @@ impl<I> Enumerate<I> {
 }
 
 impl<I: LendingIterator> LendingIterator for Enumerate<I> {
-    type Item<'a> = (usize, I::Item<'a>) where Self: 'a;
+    type Item<'a>
+        = (usize, I::Item<'a>)
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -47,7 +50,10 @@ mod test {
     // for the same type. Here in testing the bounds of the arguments
     // are known not to collide.
     impl<I: LendingIterator> LendingIterator for Delay<I> {
-        type Item<'a> = I::Item<'a> where Self: 'a;
+        type Item<'a>
+            = I::Item<'a>
+        where
+            Self: 'a;
         fn next(&mut self) -> Option<Self::Item<'_>> {
             if self.countdown == 0 {
                 self.iter.next()

@@ -22,10 +22,10 @@ impl<I: Iterator> WindowsMut<I> {
 }
 
 impl<I: Iterator> LendingIterator for WindowsMut<I> {
-    type Item<'a> = &'a mut [I::Item]
-        where
-            Self: 'a
-    ;
+    type Item<'a>
+        = &'a mut [I::Item]
+    where
+        Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next().map(|next| {
@@ -62,7 +62,7 @@ mod tests {
     fn windows_mut_modifies_elements() {
         let mut sum = 0;
         (0..4).windows_mut(2).for_each(|w| {
-            w[0] = w[0] * 2;
+            w[0] *= 2;
             sum += w[0];
         });
         assert_eq!(sum, 6);

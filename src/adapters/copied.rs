@@ -2,30 +2,30 @@ use std::ops::Deref;
 
 use crate::LendingIterator;
 
-/// A lending iterator that clones the elements of an underlying lending iterator.
+/// A lending iterator that copies the elements of an underlying lending iterator.
 ///
-/// This `struct` is created by the [`cloned`] method on [`LendingIterator`]. See
+/// This `struct` is created by the [`copied`] method on [`LendingIterator`]. See
 /// its documentation for more.
 ///
 /// [`LendingIterator`]: crate::LendingIterator
-/// [`cloned`]: crate::LendingIterator::cloned
+/// [`copied`]: crate::LendingIterator::copied
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct Cloned<I> {
+pub struct Copied<I> {
     iter: I,
 }
 
-impl<I> Cloned<I> {
-    pub(crate) fn new(iter: I) -> Cloned<I> {
-        Cloned { iter }
+impl<I> Copied<I> {
+    pub(crate) fn new(iter: I) -> Copied<I> {
+        Copied { iter }
     }
 }
 
-impl<I> LendingIterator for Cloned<I>
+impl<I> LendingIterator for Copied<I>
 where
     I: LendingIterator,
     for<'a> I::Item<'a>: Deref,
-    for<'a> <I::Item<'a> as Deref>::Target: Clone,
+    for<'a> <I::Item<'a> as Deref>::Target: Copy,
 {
     type Item<'a>
         = <I::Item<'a> as Deref>::Target
@@ -33,7 +33,22 @@ where
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iter.next().map(|item| item.deref().clone())
+        self.iter.next().map(|item| *item)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    #[inline]
+    fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
+        self.iter.nth(n).map(|item| *item)
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.iter.count()
     }
 }
 
@@ -45,20 +60,20 @@ impl<I, T> Iterator for IntoIter<I>
 where
     I: LendingIterator,
     for<'a> I::Item<'a>: Deref<Target = T>,
-    T: Clone,
+    T: Copy,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|item| item.deref().clone())
+        self.iter.next().map(|item| *item)
     }
 }
 
-impl<I, T> IntoIterator for Cloned<I>
+impl<I, T> IntoIterator for Copied<I>
 where
     I: LendingIterator,
     for<'a> I::Item<'a>: Deref<Target = T>,
-    T: Clone,
+    T: Copy,
 {
     type Item = T;
     type IntoIter = IntoIter<I>;
@@ -73,9 +88,9 @@ mod tests {
     use crate::{LendingIterator, ToLendingIterator};
 
     #[test]
-    fn cloned_basic() {
+    fn copied_basic() {
         let data = vec![1, 2, 3];
-        let result: Vec<_> = data.lend_refs().cloned().into_iter().collect();
+        let result: Vec<_> = data.lend_refs().copied().into_iter().collect();
         assert_eq!(result, vec![1, 2, 3]);
     }
 }

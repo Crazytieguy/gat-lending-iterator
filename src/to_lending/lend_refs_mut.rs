@@ -15,7 +15,10 @@ impl<I: Iterator> LendRefsMut<I> {
 }
 
 impl<I: Iterator> LendingIterator for LendRefsMut<I> {
-    type Item<'a> = &'a mut I::Item where Self: 'a;
+    type Item<'a>
+        = &'a mut I::Item
+    where
+        Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.item = self.iter.next();
@@ -33,7 +36,10 @@ mod test {
     }
 
     impl LendingIterator for W {
-        type Item<'a> = &'a mut Foo where Self: 'a;
+        type Item<'a>
+            = &'a mut Foo
+        where
+            Self: 'a;
         fn next(&mut self) -> Option<Self::Item<'_>> {
             self.x.0 += 1;
             Some(&mut self.x)

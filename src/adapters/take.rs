@@ -21,7 +21,10 @@ impl<I> LendingIterator for Take<I>
 where
     I: LendingIterator,
 {
-    type Item<'a> = I::Item<'a> where I: 'a;
+    type Item<'a>
+        = I::Item<'a>
+    where
+        I: 'a;
 
     #[inline]
     #[allow(clippy::if_not_else)]

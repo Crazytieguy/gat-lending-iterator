@@ -22,10 +22,10 @@ impl<I: Iterator> Windows<I> {
 }
 
 impl<I: Iterator> LendingIterator for Windows<I> {
-    type Item<'a> = &'a [I::Item]
-        where
-            Self: 'a
-    ;
+    type Item<'a>
+        = &'a [I::Item]
+    where
+        Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next().map(|next| {
@@ -48,21 +48,13 @@ mod tests {
 
     #[test]
     fn windows_basic() {
-        let result: Vec<_> = (0..5)
-            .windows(3)
-            .map(to_vec_i32)
-            .into_iter()
-            .collect();
+        let result: Vec<_> = (0..5).windows(3).map(to_vec_i32).into_iter().collect();
         assert_eq!(result, vec![vec![0, 1, 2], vec![1, 2, 3], vec![2, 3, 4]]);
     }
 
     #[test]
     fn windows_size_one() {
-        let result: Vec<_> = (0..3)
-            .windows(1)
-            .map(to_vec_i32)
-            .into_iter()
-            .collect();
+        let result: Vec<_> = (0..3).windows(1).map(to_vec_i32).into_iter().collect();
         assert_eq!(result, vec![vec![0], vec![1], vec![2]]);
     }
 

@@ -30,10 +30,10 @@ where
     A: LendingIterator,
     for<'a> B: LendingIterator<Item<'a> = A::Item<'a>> + 'a,
 {
-    type Item<'a> = A::Item<'a>
-        where
-            Self: 'a
-    ;
+    type Item<'a>
+        = A::Item<'a>
+    where
+        Self: 'a;
 
     #[inline]
     fn next(&mut self) -> Option<A::Item<'_>> {
@@ -64,9 +64,6 @@ mod tests {
             .map(to_vec_i32)
             .into_iter()
             .collect();
-        assert_eq!(result, vec![
-            vec![0, 1], vec![1, 2],
-            vec![5, 6], vec![6, 7]
-        ]);
+        assert_eq!(result, vec![vec![0, 1], vec![1, 2], vec![5, 6], vec![6, 7]]);
     }
 }
