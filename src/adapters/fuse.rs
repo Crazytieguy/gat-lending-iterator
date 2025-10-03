@@ -42,16 +42,16 @@ where
         // SAFETY: see https://docs.rs/polonius-the-crab/0.3.1/polonius_the_crab/#the-arcanemagic
         let self_ = unsafe { &mut *(self as *mut Self) };
         let iter = self_.iter.as_mut()?;
-        match iter.next() {
-            Some(item) => Some(item),
-            None => {
-                self.iter = None;
-                None
-            }
+        if let Some(item) = iter.next() {
+            Some(item)
+        } else {
+            self.iter = None;
+            None
         }
     }
 
     #[inline]
+    #[allow(clippy::redundant_closure_for_method_calls)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter
             .as_ref()

@@ -32,7 +32,7 @@ where
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iter.next().map(|item| *item.deref())
+        self.iter.next().map(|item| *item)
     }
 
     #[inline]
@@ -42,7 +42,7 @@ where
 
     #[inline]
     fn nth(&mut self, n: usize) -> Option<Self::Item<'_>> {
-        self.iter.nth(n).map(|item| *item.deref())
+        self.iter.nth(n).map(|item| *item)
     }
 
     #[inline]
@@ -64,7 +64,7 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|item| *item.deref())
+        self.iter.next().map(|item| *item)
     }
 }
 

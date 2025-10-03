@@ -18,7 +18,7 @@ pub struct Scan<I, St, F> {
 
 impl<I, St, F> Scan<I, St, F> {
     pub(crate) fn new(iter: I, state: St, f: F) -> Self {
-        Self { iter, state, f }
+        Self { iter, f, state }
     }
 }
 
