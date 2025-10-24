@@ -1,14 +1,48 @@
-//! This crate uses generic associated types to supply an iterator trait
-//! that allows the items to \[mutably\] borrow from the iterator.
-//! See [the GAT anouncement](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html)
+//! # What are Lending Iterators?
 //!
-//! Most `Iterator` methods can work as is on `LendingIterator`s, but some wouldn't make sense.
-//! Basically any method that needs to look at more than one element at once isn't possible, or needs to be modified.
+//! A **lending iterator** (also called a "streaming iterator") is an iterator that yields items
+//! that borrow from the iterator itself, rather than being owned values. This is in contrast to
+//! Rust's standard `Iterator` trait, where each item is independent and doesn't borrow from the iterator.
+//!
+//! ## Why Are They Useful?
+//!
+//! Lending iterators solve a fundamental limitation of standard iterators: **they allow you to
+//! iterate over overlapping or mutable views of data without cloning**.
+//!
+//! ### The Problem with Standard Iterators
+//!
+//! Standard Rust iterators cannot yield items that borrow from the iterator's internal state.
+//! For example, you cannot create an iterator over overlapping windows of a slice where each
+//! window is a `&[T]` that borrows from the iterator. The standard library's
+//! [`slice::windows`](https://doc.rust-lang.org/std/primitive.slice.html#method.windows)
+//! returns an iterator, but it must own the slice being iterated over.
+//!
+//! ### The Solution: Generic Associated Types
+//!
+//! This crate uses [Generic Associated Types (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html)
+//! to create a `LendingIterator` trait where items can have lifetimes tied to the iterator:
+//!
+//! ```ignore
+//! trait LendingIterator {
+//!     type Item<'a> where Self: 'a;
+//!     fn next(&mut self) -> Option<Self::Item<'_>>;
+//! }
+//! ```
+//!
+//! This allows items to borrow from `&mut self`, enabling patterns like:
+//! - **Overlapping windows**: Iterate over sliding windows without cloning
+//! - **Mutable windows**: Iterate over mutable slices that can modify the underlying data
+//! - **Streaming parsers**: Parse data without buffering entire chunks
+//!
+//! ## API Overview
+//!
+//! Most `Iterator` methods work on `LendingIterator`s, but some don't make sense because they
+//! require holding multiple items simultaneously (e.g., `collect`, `peekable`).
 //!
 //! Some `LendingIterator` methods *may* return something that can act as an `Iterator`.
 //! For example `cloned`, or `map`, when the function passed to it
 //! returns a value that isn't tied to the lifetime of its input.
-//! In these cases, my design choice was to conditionally implement `IntoIterator` for the adapter.
+//! In these cases, this crate conditionally implements `IntoIterator` for the adapter.
 //!
 //! This crate also provides an extension trait `ToLendingIterator: Iterator` for iterators
 //! that allows turning them into lending iterators (over windows of elements).
