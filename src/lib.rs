@@ -2,22 +2,11 @@
 //!
 //! A **lending iterator** yields items that borrow from the iterator itself, unlike standard
 //! `Iterator` where each item must be independent. This is enabled by [Generic Associated Types
-//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html):
-//!
-//! ```ignore
-//! trait LendingIterator {
-//!     type Item<'a> where Self: 'a;
-//!     fn next(&mut self) -> Option<Self::Item<'_>>;
-//! }
-//! ```
-//!
-//! ## Why Lending Iterators?
+//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html).
 //!
 //! Standard iterators cannot return items that borrow from `&mut self` due to lifetime constraints.
 //! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning
 //! or streaming parsers that reuse internal buffers.
-//!
-//! ## API Design
 //!
 //! Most `Iterator` methods work on `LendingIterator`, except those requiring multiple items
 //! simultaneously (e.g., `collect`, `peekable`). Some methods like `map` and `cloned` conditionally
