@@ -1,18 +1,18 @@
-//! This crate uses generic associated types to supply an iterator trait
-//! that allows the items to \[mutably\] borrow from the iterator.
-//! See [the GAT anouncement](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html)
+//! # Lending Iterators with Generic Associated Types
 //!
-//! Most `Iterator` methods can work as is on `LendingIterator`s, but some wouldn't make sense.
-//! Basically any method that needs to look at more than one element at once isn't possible, or needs to be modified.
+//! A **lending iterator** yields items that borrow from the iterator itself, unlike standard
+//! `Iterator` where each item must be independent. This is enabled by [Generic Associated Types
+//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html) ([motivation](https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push/)).
 //!
-//! Some `LendingIterator` methods *may* return something that can act as an `Iterator`.
-//! For example `cloned`, or `map`, when the function passed to it
-//! returns a value that isn't tied to the lifetime of its input.
-//! In these cases, my design choice was to conditionally implement `IntoIterator` for the adapter.
+//! Standard iterators cannot return items that borrow from `&mut self` due to lifetime constraints.
+//! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning.
 //!
-//! This crate also provides an extension trait `ToLendingIterator: Iterator` for iterators
-//! that allows turning them into lending iterators (over windows of elements).
-//! There may be more methods added to this trait in the future.
+//! Most `Iterator` methods work on `LendingIterator`, except those requiring multiple items
+//! simultaneously (e.g., `collect`, `peekable`). Some methods like `map` and `cloned` conditionally
+//! implement `IntoIterator` when the returned value doesn't borrow from input.
+//!
+//! This crate provides `ToLendingIterator` to convert standard iterators into lending iterators,
+//! enabling methods like `windows()` and `windows_mut()`.
 //!
 //! # Examples
 //!
