@@ -1,9 +1,22 @@
 # Gat Lending Iterator
 
-A library for lending iterators using Generic Associated Types (GATs). Lending iterators allow items to borrow from `&mut self`, enabling patterns like iterating over windows of elements with references. **Work in progress**.
+A library for lending iterators using Generic Associated Types (GATs). **Work in progress**.
 
 [![Crates.io](https://img.shields.io/crates/v/gat-lending-iterator.svg)](https://crates.io/crates/gat-lending-iterator)
 [![Documentation](https://docs.rs/gat-lending-iterator/badge.svg)](https://docs.rs/gat-lending-iterator)
+
+## What are Lending Iterators?
+
+**Lending iterators** yield items that borrow from the iterator itself. Standard Rust iterators cannot do this—each item must be independent. Using [Generic Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html), lending iterators enable efficient patterns like overlapping windows without cloning:
+
+```rust
+trait LendingIterator {
+    type Item<'a> where Self: 'a;
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+```
+
+This allows items to have lifetimes tied to `&mut self`, enabling iteration over mutable views and streaming parsers without buffering.
 
 ## Example
 
