@@ -2,7 +2,7 @@
 //!
 //! A **lending iterator** yields items that borrow from the iterator itself, unlike standard
 //! `Iterator` where each item must be independent. This is enabled by [Generic Associated Types
-//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html) ([original push](https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push/)).
+//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html) ([motivation](https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push/)).
 //!
 //! Standard iterators cannot return items that borrow from `&mut self` due to lifetime constraints.
 //! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning.
