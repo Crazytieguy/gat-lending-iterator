@@ -1,26 +1,8 @@
-//! # What are Lending Iterators?
+//! # Lending Iterators with Generic Associated Types
 //!
-//! A **lending iterator** (also called a "streaming iterator") is an iterator that yields items
-//! that borrow from the iterator itself, rather than being owned values. This is in contrast to
-//! Rust's standard `Iterator` trait, where each item is independent and doesn't borrow from the iterator.
-//!
-//! ## Why Are They Useful?
-//!
-//! Lending iterators solve a fundamental limitation of standard iterators: **they allow you to
-//! iterate over overlapping or mutable views of data without cloning**.
-//!
-//! ### The Problem with Standard Iterators
-//!
-//! Standard Rust iterators cannot yield items that borrow from the iterator's internal state.
-//! For example, you cannot create an iterator over overlapping windows of a slice where each
-//! window is a `&[T]` that borrows from the iterator. The standard library's
-//! [`slice::windows`](https://doc.rust-lang.org/std/primitive.slice.html#method.windows)
-//! returns an iterator, but it must own the slice being iterated over.
-//!
-//! ### The Solution: Generic Associated Types
-//!
-//! This crate uses [Generic Associated Types (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html)
-//! to create a `LendingIterator` trait where items can have lifetimes tied to the iterator:
+//! A **lending iterator** yields items that borrow from the iterator itself, unlike standard
+//! `Iterator` where each item must be independent. This is enabled by [Generic Associated Types
+//! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html):
 //!
 //! ```ignore
 //! trait LendingIterator {
@@ -29,24 +11,20 @@
 //! }
 //! ```
 //!
-//! This allows items to borrow from `&mut self`, enabling patterns like:
-//! - **Overlapping windows**: Iterate over sliding windows without cloning
-//! - **Mutable windows**: Iterate over mutable slices that can modify the underlying data
-//! - **Streaming parsers**: Parse data without buffering entire chunks
+//! ## Why Lending Iterators?
 //!
-//! ## API Overview
+//! Standard iterators cannot return items that borrow from `&mut self` due to lifetime constraints.
+//! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning
+//! or streaming parsers that reuse internal buffers.
 //!
-//! Most `Iterator` methods work on `LendingIterator`s, but some don't make sense because they
-//! require holding multiple items simultaneously (e.g., `collect`, `peekable`).
+//! ## API Design
 //!
-//! Some `LendingIterator` methods *may* return something that can act as an `Iterator`.
-//! For example `cloned`, or `map`, when the function passed to it
-//! returns a value that isn't tied to the lifetime of its input.
-//! In these cases, this crate conditionally implements `IntoIterator` for the adapter.
+//! Most `Iterator` methods work on `LendingIterator`, except those requiring multiple items
+//! simultaneously (e.g., `collect`, `peekable`). Some methods like `map` and `cloned` conditionally
+//! implement `IntoIterator` when the returned value doesn't borrow from input.
 //!
-//! This crate also provides an extension trait `ToLendingIterator: Iterator` for iterators
-//! that allows turning them into lending iterators (over windows of elements).
-//! There may be more methods added to this trait in the future.
+//! This crate provides `ToLendingIterator` to convert standard iterators into lending iterators,
+//! enabling methods like `windows()` and `windows_mut()`.
 //!
 //! # Examples
 //!

@@ -7,16 +7,7 @@ A library for lending iterators using Generic Associated Types (GATs). **Work in
 
 ## What are Lending Iterators?
 
-**Lending iterators** (also called "streaming iterators") yield items that borrow from the iterator itself, rather than being owned values. This solves a fundamental limitation of Rust's standard `Iterator` trait.
-
-### Why Use Them?
-
-Standard Rust iterators cannot yield items that borrow from the iterator's internal state. This prevents patterns like:
-- Iterating over **overlapping windows** without cloning each window
-- Iterating with **mutable views** that can modify underlying data
-- Creating **streaming parsers** without buffering entire chunks
-
-Lending iterators enable these patterns efficiently using [Generic Associated Types (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html), allowing items to have lifetimes tied to the iterator:
+**Lending iterators** yield items that borrow from the iterator itself. Standard Rust iterators cannot do this—each item must be independent. Using [Generic Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html), lending iterators enable efficient patterns like overlapping windows without cloning:
 
 ```rust
 trait LendingIterator {
@@ -24,6 +15,8 @@ trait LendingIterator {
     fn next(&mut self) -> Option<Self::Item<'_>>;
 }
 ```
+
+This allows items to have lifetimes tied to `&mut self`, enabling iteration over mutable views and streaming parsers without buffering.
 
 ## Example
 
