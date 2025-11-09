@@ -7,7 +7,7 @@ A library for lending iterators using Generic Associated Types (GATs). **Work in
 
 ## What are Lending Iterators?
 
-**Lending iterators** yield items that borrow from the iterator itself. Standard Rust iterators cannot do this—each item must be independent. Using [Generic Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html), lending iterators enable efficient patterns like overlapping windows without cloning, iteration over mutable views, and streaming parsers without buffering.
+**Lending iterators** yield items that borrow from the iterator itself. Standard Rust iterators cannot do this—each item must be independent. Using [Generic Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html), lending iterators enable efficient patterns like overlapping windows without cloning and iteration over mutable views.
 
 ## Example
 

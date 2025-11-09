@@ -5,8 +5,7 @@
 //! (GATs)](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html).
 //!
 //! Standard iterators cannot return items that borrow from `&mut self` due to lifetime constraints.
-//! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning
-//! or streaming parsers that reuse internal buffers.
+//! Lending iterators solve this, enabling patterns like overlapping mutable windows without cloning.
 //!
 //! Most `Iterator` methods work on `LendingIterator`, except those requiring multiple items
 //! simultaneously (e.g., `collect`, `peekable`). Some methods like `map` and `cloned` conditionally
